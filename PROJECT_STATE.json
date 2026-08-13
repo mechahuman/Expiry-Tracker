@@ -1,0 +1,64 @@
+{
+  "project": "Packaged Food Inventory & Expiry Tracker (PWA)",
+  "plan_file": "C:\\Users\\manav\\.claude\\plans\\development-roadmap-atomic-fountain.md",
+  "build_order": [
+    "0 Setup", "1 DB Schema", "2 Auth & Onboarding", "3 Manual Entry",
+    "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
+    "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
+  ],
+  "current_module": "0 Setup",
+  "workflow_agreements": [
+    "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
+    "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
+    "Model per module: see model_guide below (both run at medium reasoning effort)",
+    "Update this file (and PROGRESS.md) after every meaningful change, not just at module end"
+  ],
+  "model_guide": {
+    "0": "Sonnet 5", "1": "Opus 4.8", "2": "Sonnet 5", "3": "Sonnet 5",
+    "4": "Sonnet 5", "5": "Opus 4.8", "6": "Opus 4.8", "7": "Sonnet 5",
+    "8": "Opus 4.8", "9": "Opus 4.8 (engine design) then Sonnet 5 (badge entries)",
+    "10": "Opus 4.8 (cache strategy) then Sonnet 5 (manifest/icons)",
+    "11": "Sonnet 5", "12": "Sonnet 5"
+  },
+  "modules": {
+    "0": {
+      "name": "Project Setup",
+      "status": "in_progress",
+      "started": "2026-08-13",
+      "completed": null,
+      "tasks": {
+        "scaffold_vite_react": "done",
+        "install_core_deps": "done",
+        "install_pwa_plugin": "done",
+        "configure_vite_pwa": "done",
+        "placeholder_icons_generated": "done",
+        "build_verified": "done",
+        "supabase_project_created": "blocked_on_user",
+        "supabase_client_setup": "done_pending_keys",
+        "env_local_created": "done_pending_keys",
+        "deploy_https": "blocked_on_user",
+        "done_when_checklist_passed": false
+      },
+      "notes": [
+        "Scaffolded via `npm create vite@latest . -- --template react` into a temp subfolder then moved up (create-vite's non-empty-dir prompt can't run non-interactively).",
+        "Vite 8 uses the rolldown bundler; rollupOptions.manualChunks must be a function not an object, or it fails the build. Removed manualChunks entirely -- dynamic import() alone is enough to code-split Modules 5/6's heavy libs, no bundler config needed.",
+        "Placeholder PNG icons (192/512, solid teal #0f9d8a) generated via a throwaway Node script (no PIL/ImageMagick available) -- swap for real branded icons before shipping.",
+        "src/App.jsx replaced Vite's default template with a minimal Supabase status check using supabase.auth.getSession() (works with no tables yet -- categories/inventory_items don't exist until Module 1).",
+        "package.json name fixed from 'scaffold-tmp' (leftover temp folder name) to 'expiry-tracker'.",
+        "`npm run build` succeeds: service worker + manifest.webmanifest generated correctly.",
+        "package.json 'name' left as 'expiry-tracker'; app will currently throw at runtime because .env.local has empty Supabase keys (expected -- supabaseClient.js intentionally throws on missing keys) until Supabase project is created.",
+        "REMAINING: Supabase project creation (user must sign up, no card needed) and deploy to Vercel/Netlify (user account needed) -- both blocked on user action."
+      ]
+    }
+  },
+  "pending_user_actions": [
+    "Create a free Supabase project (supabase.com, email signup, no card) and provide the Project URL + anon public key so .env.local can be filled in and the connection verified.",
+    "Choose and set up a free HTTPS deploy target (Vercel or Netlify, no card) so camera/mic APIs can be tested on a real phone (Modules 5-6 need HTTPS)."
+  ],
+  "key_config": {
+    "supabase_url": null,
+    "supabase_anon_key": null,
+    "deploy_url": null
+  },
+  "last_updated": "2026-08-13"
+}
