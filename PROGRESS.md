@@ -19,4 +19,19 @@ Narrative log of what's been done, in order. Machine-readable state lives in `PR
 - Created `src/lib/supabaseClient.js` (throws clearly if env keys are missing) and `.env.local` / `.env.local.example` (keys currently blank).
 - Replaced Vite's default `App.jsx` with a minimal Supabase connectivity check using `supabase.auth.getSession()` (doesn't depend on any table, so it works before Module 1's schema exists).
 - `npm run build` verified working (service worker + manifest generated).
-- **Paused here** — remaining Module 0 steps need the user: create a Supabase project and share the URL/anon key, and pick a deploy target (Vercel/Netlify).
+- Git repo initialized; initial commit `7e72f76` ("Module 0: scaffold Vite+React PWA, Supabase client, PWA manifest") — `.env.local` correctly excluded via `*.local` in `.gitignore`.
+- Deploy target chosen: **Vercel**.
+- User created Supabase project (`rrrgwvndhubaxoxeklex`), shared Project URL + anon public key + a new-format publishable key. Used the anon public (JWT) key in `.env.local` to match `supabaseClient.js`'s expected `VITE_SUPABASE_ANON_KEY`.
+- Verified the project is live: `curl .../auth/v1/health` with the anon key returned HTTP 200.
+- Started the Vite dev server locally (`npm run dev`, port 5173) — starts clean, no build errors, `curl localhost:5173` returns HTTP 200.
+- User switched deploy plan to GitHub-connected auto-deploy (instead of Vercel CLI). Created empty GitHub repo `mechahuman/Expiry-Tracker`.
+- Renamed local branch `master` → `main`, added `origin` remote, pushed initial commit — `main` now tracks `origin/main`.
+- User connected the GitHub repo on Vercel dashboard, added env vars, deployed. Live at **https://expiry-tracker-mu.vercel.app/**.
+- Verified via curl: root page, `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png` all return HTTP 200; manifest content correct.
+- User confirmed in-browser: "Supabase status: connected" showing, and install/"Add to Home Screen" works on their phone.
+- **MODULE 0 COMPLETE.** All Done-when checklist items passed: app loads on deployed HTTPS URL (desktop + phone), Supabase connection confirmed, PWA installable.
+
+---
+
+## Module 1 — DB Schema (not started)
+Next up. Recommended model per plan: **Opus 4.8** (RLS policies are security-critical — a mistake here silently leaks data across users).

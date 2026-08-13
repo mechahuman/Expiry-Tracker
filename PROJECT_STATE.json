@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "0 Setup",
+  "current_module": "1 DB Schema",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -23,9 +23,9 @@
   "modules": {
     "0": {
       "name": "Project Setup",
-      "status": "in_progress",
+      "status": "done",
       "started": "2026-08-13",
-      "completed": null,
+      "completed": "2026-08-13",
       "tasks": {
         "scaffold_vite_react": "done",
         "install_core_deps": "done",
@@ -33,11 +33,15 @@
         "configure_vite_pwa": "done",
         "placeholder_icons_generated": "done",
         "build_verified": "done",
-        "supabase_project_created": "blocked_on_user",
-        "supabase_client_setup": "done_pending_keys",
-        "env_local_created": "done_pending_keys",
-        "deploy_https": "blocked_on_user",
-        "done_when_checklist_passed": false
+        "supabase_project_created": "done",
+        "supabase_client_setup": "done",
+        "env_local_created": "done",
+        "supabase_connection_verified_via_curl": "done",
+        "supabase_connection_verified_in_browser": "done",
+        "deploy_https": "done",
+        "deploy_verified_via_curl": "done",
+        "pwa_installable_confirmed_on_phone": "done",
+        "done_when_checklist_passed": true
       },
       "notes": [
         "Scaffolded via `npm create vite@latest . -- --template react` into a temp subfolder then moved up (create-vite's non-empty-dir prompt can't run non-interactively).",
@@ -46,9 +50,29 @@
         "src/App.jsx replaced Vite's default template with a minimal Supabase status check using supabase.auth.getSession() (works with no tables yet -- categories/inventory_items don't exist until Module 1).",
         "package.json name fixed from 'scaffold-tmp' (leftover temp folder name) to 'expiry-tracker'.",
         "`npm run build` succeeds: service worker + manifest.webmanifest generated correctly.",
-        "package.json 'name' left as 'expiry-tracker'; app will currently throw at runtime because .env.local has empty Supabase keys (expected -- supabaseClient.js intentionally throws on missing keys) until Supabase project is created.",
-        "REMAINING: Supabase project creation (user must sign up, no card needed) and deploy to Vercel/Netlify (user account needed) -- both blocked on user action."
+        "Supabase project created (ref rrrgwvndhubaxoxeklex); anon key verified live via /auth/v1/health -> HTTP 200.",
+        "Deploy switched from Vercel-CLI plan to GitHub-connected auto-deploy: created github.com/mechahuman/Expiry-Tracker, renamed local branch master->main, pushed, connected via Vercel dashboard import with VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY env vars set there.",
+        "Live at https://expiry-tracker-mu.vercel.app/ -- verified via curl (root, manifest.webmanifest, sw.js, both icons all HTTP 200) and confirmed by user: Supabase status shows 'connected' in-browser, install/Add-to-Home-Screen prompt works on phone.",
+        "MODULE 0 COMPLETE 2026-08-13."
       ]
+    },
+    "1": {
+      "name": "DB Schema (Categories, Inventory, Badges, RLS)",
+      "status": "not_started",
+      "started": null,
+      "completed": null,
+      "tasks": {
+        "profiles_table": "pending",
+        "categories_table_seeded": "pending",
+        "inventory_items_table": "pending",
+        "badges_table": "pending",
+        "user_badges_table": "pending",
+        "rls_enabled": "pending",
+        "rls_policies_written": "pending",
+        "rls_policies_tested": "pending",
+        "done_when_checklist_passed": false
+      },
+      "notes": []
     }
   },
   "pending_user_actions": [
@@ -56,9 +80,15 @@
     "Choose and set up a free HTTPS deploy target (Vercel or Netlify, no card) so camera/mic APIs can be tested on a real phone (Modules 5-6 need HTTPS)."
   ],
   "key_config": {
-    "supabase_url": null,
-    "supabase_anon_key": null,
-    "deploy_url": null
+    "supabase_url": "https://rrrgwvndhubaxoxeklex.supabase.co",
+    "supabase_anon_key": "set in .env.local (gitignored) -- verified live via /auth/v1/health returning HTTP 200",
+    "deploy_target": "Vercel (via GitHub-connected auto-deploy)",
+    "deploy_url": "https://expiry-tracker-mu.vercel.app/",
+    "vercel_project_dashboard": "https://vercel.com/manav-bhavsars-projects-ae85607f/expiry-tracker",
+    "git_initialized": true,
+    "initial_commit": "7e72f76",
+    "github_repo": "https://github.com/mechahuman/Expiry-Tracker",
+    "default_branch": "main"
   },
   "last_updated": "2026-08-13"
 }
