@@ -36,4 +36,11 @@ Narrative log of what's been done, in order. Machine-readable state lives in `PR
 ## 2026-08-13 — Module 1 (DB Schema) started
 - Wrote `supabase/schema.sql`: `profiles`, `categories` (seeded), `inventory_items`, `badges`, `user_badges` tables matching the roadmap exactly, plus RLS enabled + `auth.uid()`-based policies on `profiles`/`inventory_items`/`user_badges`. `categories`/`badges` intentionally left without RLS (shared reference data). `user_badges` has no update/delete policy on purpose — badges are append-only from the client.
 - Wrote `supabase/test_rls.sql`: manual verification script — create 2 test auth users, seed one inventory row each, impersonate each via `request.jwt.claims` + `set local role authenticated`, confirm each only sees their own row.
-- I don't have DB credentials (only the anon key, not the DB password or a Management API token) so I can't run this SQL myself — **paused, waiting on user to run `schema.sql` then `test_rls.sql` in the Supabase SQL Editor** and report back the results.
+- I don't have DB credentials (only the anon key, not the DB password or a Management API token) so I can't run this SQL myself — user ran `schema.sql` then `test_rls.sql` in the Supabase SQL Editor.
+- RLS isolation confirmed both directions: impersonating test-a returned only "Test A milk", impersonating test-b returned only "Test B chips". Test inventory rows cleaned up; the two test auth users left in place (harmless).
+- **MODULE 1 COMPLETE.**
+
+---
+
+## Module 2 — Auth & Onboarding (not started)
+Next up. Recommended model per plan: **Sonnet 5** (well-trodden Supabase Auth pattern — signup/login/OAuth, onboarding carousel, route guards).

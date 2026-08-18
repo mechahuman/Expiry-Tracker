@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "1 DB Schema",
+  "current_module": "2 Auth & Onboarding",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -58,33 +58,47 @@
     },
     "1": {
       "name": "DB Schema (Categories, Inventory, Badges, RLS)",
-      "status": "in_progress",
+      "status": "done",
       "started": "2026-08-13",
-      "completed": null,
+      "completed": "2026-08-13",
       "tasks": {
         "schema_sql_written": "done",
-        "profiles_table": "pending_user_run",
-        "categories_table_seeded": "pending_user_run",
-        "inventory_items_table": "pending_user_run",
-        "badges_table": "pending_user_run",
-        "user_badges_table": "pending_user_run",
-        "rls_enabled": "pending_user_run",
-        "rls_policies_written": "pending_user_run",
-        "rls_policies_tested": "pending_user_run",
-        "done_when_checklist_passed": false
+        "profiles_table": "done",
+        "categories_table_seeded": "done",
+        "inventory_items_table": "done",
+        "badges_table": "done",
+        "user_badges_table": "done",
+        "rls_enabled": "done",
+        "rls_policies_written": "done",
+        "rls_policies_tested": "done",
+        "done_when_checklist_passed": true
       },
       "notes": [
-        "I do not have Postgres/DB credentials (only VITE_SUPABASE_ANON_KEY, not the DB password or a Management API token), so schema DDL can't be run by me directly -- user must paste supabase/schema.sql into the Supabase SQL Editor and run it.",
+        "I do not have Postgres/DB credentials (only VITE_SUPABASE_ANON_KEY, not the DB password or a Management API token), so schema DDL can't be run by me directly -- user ran supabase/schema.sql in the Supabase SQL Editor.",
         "supabase/schema.sql: idempotent (IF NOT EXISTS / ON CONFLICT / DROP POLICY IF EXISTS) so safe to re-run. Creates profiles, categories (seeded), inventory_items, badges, user_badges. Enables RLS + auth.uid()-based policies on profiles/inventory_items/user_badges only -- categories/badges are shared reference data, intentionally left without RLS.",
         "user_badges has no update/delete policy by design -- earned badges are append-only for the client; default-deny (no policy = no access) covers this, not an oversight.",
-        "supabase/test_rls.sql: step-by-step manual RLS verification script (create 2 test auth users, seed one inventory row each, impersonate each via request.jwt.claims + `set local role authenticated`, confirm isolation)."
+        "RLS verified via supabase/test_rls.sql with 2 real test auth users: impersonating test-a (id 1d238dc5-ba60-4ee6-b635-3c35485cbd63) returned only 'Test A milk'; impersonating test-b (id eacc0de3-fd86-4e45-9ff1-ace47bdf2d24) returned only 'Test B chips'. Isolation confirmed both directions. Test rows cleaned up afterward; the two test auth users/profiles were left in place (harmless, deletable later).",
+        "MODULE 1 COMPLETE 2026-08-13."
       ]
+    },
+    "2": {
+      "name": "Auth & Onboarding",
+      "status": "not_started",
+      "started": null,
+      "completed": null,
+      "tasks": {
+        "onboarding_carousel": "pending",
+        "login_signup_screen": "pending",
+        "google_oauth": "pending",
+        "profiles_row_on_signup": "pending",
+        "auth_state_listener_zustand": "pending",
+        "route_protection": "pending",
+        "done_when_checklist_passed": false
+      },
+      "notes": []
     }
   },
-  "pending_user_actions": [
-    "Create a free Supabase project (supabase.com, email signup, no card) and provide the Project URL + anon public key so .env.local can be filled in and the connection verified.",
-    "Choose and set up a free HTTPS deploy target (Vercel or Netlify, no card) so camera/mic APIs can be tested on a real phone (Modules 5-6 need HTTPS)."
-  ],
+  "pending_user_actions": [],
   "key_config": {
     "supabase_url": "https://rrrgwvndhubaxoxeklex.supabase.co",
     "supabase_anon_key": "set in .env.local (gitignored) -- verified live via /auth/v1/health returning HTTP 200",
