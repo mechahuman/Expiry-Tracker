@@ -58,21 +58,27 @@
     },
     "1": {
       "name": "DB Schema (Categories, Inventory, Badges, RLS)",
-      "status": "not_started",
-      "started": null,
+      "status": "in_progress",
+      "started": "2026-08-13",
       "completed": null,
       "tasks": {
-        "profiles_table": "pending",
-        "categories_table_seeded": "pending",
-        "inventory_items_table": "pending",
-        "badges_table": "pending",
-        "user_badges_table": "pending",
-        "rls_enabled": "pending",
-        "rls_policies_written": "pending",
-        "rls_policies_tested": "pending",
+        "schema_sql_written": "done",
+        "profiles_table": "pending_user_run",
+        "categories_table_seeded": "pending_user_run",
+        "inventory_items_table": "pending_user_run",
+        "badges_table": "pending_user_run",
+        "user_badges_table": "pending_user_run",
+        "rls_enabled": "pending_user_run",
+        "rls_policies_written": "pending_user_run",
+        "rls_policies_tested": "pending_user_run",
         "done_when_checklist_passed": false
       },
-      "notes": []
+      "notes": [
+        "I do not have Postgres/DB credentials (only VITE_SUPABASE_ANON_KEY, not the DB password or a Management API token), so schema DDL can't be run by me directly -- user must paste supabase/schema.sql into the Supabase SQL Editor and run it.",
+        "supabase/schema.sql: idempotent (IF NOT EXISTS / ON CONFLICT / DROP POLICY IF EXISTS) so safe to re-run. Creates profiles, categories (seeded), inventory_items, badges, user_badges. Enables RLS + auth.uid()-based policies on profiles/inventory_items/user_badges only -- categories/badges are shared reference data, intentionally left without RLS.",
+        "user_badges has no update/delete policy by design -- earned badges are append-only for the client; default-deny (no policy = no access) covers this, not an oversight.",
+        "supabase/test_rls.sql: step-by-step manual RLS verification script (create 2 test auth users, seed one inventory row each, impersonate each via request.jwt.claims + `set local role authenticated`, confirm isolation)."
+      ]
     }
   },
   "pending_user_actions": [

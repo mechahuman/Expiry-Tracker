@@ -33,5 +33,7 @@ Narrative log of what's been done, in order. Machine-readable state lives in `PR
 
 ---
 
-## Module 1 — DB Schema (not started)
-Next up. Recommended model per plan: **Opus 4.8** (RLS policies are security-critical — a mistake here silently leaks data across users).
+## 2026-08-13 — Module 1 (DB Schema) started
+- Wrote `supabase/schema.sql`: `profiles`, `categories` (seeded), `inventory_items`, `badges`, `user_badges` tables matching the roadmap exactly, plus RLS enabled + `auth.uid()`-based policies on `profiles`/`inventory_items`/`user_badges`. `categories`/`badges` intentionally left without RLS (shared reference data). `user_badges` has no update/delete policy on purpose — badges are append-only from the client.
+- Wrote `supabase/test_rls.sql`: manual verification script — create 2 test auth users, seed one inventory row each, impersonate each via `request.jwt.claims` + `set local role authenticated`, confirm each only sees their own row.
+- I don't have DB credentials (only the anon key, not the DB password or a Management API token) so I can't run this SQL myself — **paused, waiting on user to run `schema.sql` then `test_rls.sql` in the Supabase SQL Editor** and report back the results.
