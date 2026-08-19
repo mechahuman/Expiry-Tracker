@@ -100,16 +100,23 @@
       "status": "not_started",
       "started": null,
       "completed": null,
+      "decisions": {
+        "auth_methods": "Email/password only. Google OAuth DEFERRED to a later standalone pass (needs a Google Cloud project + consent screen + redirect URIs from the user). Build the login screen so a Google button can slot in later without rework.",
+        "routing": "react-router-dom (to install). Real URLs are needed to make the 'logged-out users cannot reach Home by URL' checklist item genuinely testable, and Modules 3-9 each need their own screen anyway.",
+        "email_confirmation": "OFF during development (Supabase Dashboard -> Authentication -> Providers -> Email -> disable 'Confirm email'). MUST be re-enabled before real users -- see launch_checklist."
+      },
       "tasks": {
+        "install_react_router": "pending",
         "onboarding_carousel": "pending",
         "login_signup_screen": "pending",
-        "google_oauth": "pending",
-        "profiles_row_on_signup": "pending",
+        "google_oauth": "deferred_by_decision",
         "auth_state_listener_zustand": "pending",
         "route_protection": "pending",
         "done_when_checklist_passed": false
       },
-      "notes": []
+      "notes": [
+        "DO NOT insert into profiles on signup. The on_auth_user_created trigger (added in 002_hardening.sql) creates the profile row atomically for every signup path. A client-side insert would be redundant and would fail on PK conflict. This overrides the original roadmap's Module 2 step 3."
+      ]
     }
   },
   "pending_user_actions": [
@@ -126,5 +133,11 @@
     "github_repo": "https://github.com/mechahuman/Expiry-Tracker",
     "default_branch": "main"
   },
-  "last_updated": "2026-08-13"
+  "launch_checklist": [
+    "Re-enable Supabase email confirmation (Auth -> Providers -> Email -> 'Confirm email') -- disabled during development for faster test loops.",
+    "Replace the placeholder solid-teal PWA icons in public/ (icon-192.png, icon-512.png) with real branded artwork.",
+    "Delete the Module 1 RLS test users (test-a / test-b) from Authentication -> Users.",
+    "Decide on gamification integrity: profiles.points and user_badges are currently writable by their owner, so points/badges can be self-awarded from devtools. See Module 1 AUDIT-DEFERRED."
+  ],
+  "last_updated": "2026-08-19"
 }

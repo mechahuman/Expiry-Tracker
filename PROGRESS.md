@@ -68,5 +68,11 @@ Also fixed:
 ---
 
 ## Module 2 — Auth & Onboarding (not started)
-Next up. Recommended model per plan: **Sonnet 5** (well-trodden Supabase Auth pattern — signup/login/OAuth, onboarding carousel, route guards).
-**Carry-in from the audit:** do not write the `profiles` insert into the signup flow — the `on_auth_user_created` trigger already handles it for every sign-up path including OAuth.
+Next up. Recommended model per plan: **Sonnet 5** (well-trodden Supabase Auth pattern — signup/login, onboarding carousel, route guards).
+
+**Decisions made before starting:**
+- **Email/password only.** Google OAuth deferred to its own later pass — it needs a Google Cloud project, consent screen, and redirect URIs configured by the user. Login screen should be built so a Google button slots in later without rework.
+- **`react-router-dom`** for routing (to install). Real URLs make the "logged-out users can't reach Home by URL" checklist item actually testable, and every module from 3 onward needs its own screen.
+- **Email confirmation OFF** during development (Supabase → Auth → Providers → Email → disable "Confirm email"). Added to the launch checklist to re-enable before real users.
+
+**Carry-in from the audit:** do **not** insert the `profiles` row in the signup flow — the `on_auth_user_created` trigger handles it atomically for every signup path. A client-side insert would be redundant and would fail on PK conflict. This supersedes the original roadmap's Module 2 step 3.
