@@ -1,6 +1,10 @@
 -- Module 1: core schema + Row Level Security
 -- Run this whole file once in the Supabase SQL Editor (Project -> SQL Editor -> New query -> paste -> Run).
 -- Safe to re-run: every statement is idempotent (IF NOT EXISTS / ON CONFLICT / OR REPLACE).
+--
+-- !! THEN RUN 002_hardening.sql -- it fixes a critical hole in this file
+-- !! (categories/badges writable by anyone) plus several correctness issues.
+-- !! This file is kept as-written for history; 002 is the current state.
 
 create extension if not exists pgcrypto;
 
@@ -17,7 +21,9 @@ create table if not exists profiles (
   created_at timestamp default now()
 );
 
--- Public reference data -- no RLS, readable by anyone with the anon key.
+-- Shared reference data. NOTE: the "no RLS needed" reasoning below turned out to
+-- be wrong -- without RLS these tables are WRITABLE by anyone holding the anon
+-- key. Locked down in 002_hardening.sql; run that too.
 create table if not exists categories (
   id serial primary key,
   name text unique not null
@@ -42,7 +48,8 @@ create table if not exists inventory_items (
   used_at timestamp
 );
 
--- Public reference data -- no RLS, same reasoning as categories.
+-- Shared reference data -- same wrong assumption as categories, same fix in
+-- 002_hardening.sql.
 create table if not exists badges (
   id serial primary key,
   name text not null,

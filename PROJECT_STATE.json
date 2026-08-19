@@ -71,14 +71,27 @@
         "rls_enabled": "done",
         "rls_policies_written": "done",
         "rls_policies_tested": "done",
-        "done_when_checklist_passed": true
+        "done_when_checklist_passed": true,
+        "opus_hardening_audit": "done",
+        "hardening_sql_written": "done",
+        "hardening_sql_run_by_user": "pending_user_run",
+        "hardening_verified": "pending"
       },
       "notes": [
         "I do not have Postgres/DB credentials (only VITE_SUPABASE_ANON_KEY, not the DB password or a Management API token), so schema DDL can't be run by me directly -- user ran supabase/schema.sql in the Supabase SQL Editor.",
         "supabase/schema.sql: idempotent (IF NOT EXISTS / ON CONFLICT / DROP POLICY IF EXISTS) so safe to re-run. Creates profiles, categories (seeded), inventory_items, badges, user_badges. Enables RLS + auth.uid()-based policies on profiles/inventory_items/user_badges only -- categories/badges are shared reference data, intentionally left without RLS.",
         "user_badges has no update/delete policy by design -- earned badges are append-only for the client; default-deny (no policy = no access) covers this, not an oversight.",
         "RLS verified via supabase/test_rls.sql with 2 real test auth users: impersonating test-a (id 1d238dc5-ba60-4ee6-b635-3c35485cbd63) returned only 'Test A milk'; impersonating test-b (id eacc0de3-fd86-4e45-9ff1-ace47bdf2d24) returned only 'Test B chips'. Isolation confirmed both directions. Test rows cleaned up afterward; the two test auth users/profiles were left in place (harmless, deletable later).",
-        "MODULE 1 COMPLETE 2026-08-13."
+        "MODULE 1 COMPLETE 2026-08-13.",
+        "2026-08-19 OPUS AUDIT: found 7 issues in the original schema; fixes written to supabase/002_hardening.sql (must be run in SQL Editor after schema.sql).",
+        "AUDIT-1 (CRITICAL, empirically verified): categories and badges had RLS disabled on the wrong assumption that 'reference data doesn't need RLS'. Supabase exposes all public-schema tables via PostgREST and grants anon/authenticated write privileges by default, so RLS-off = writes allowed. Proven live against this project using ONLY the anon key (public, ships in the frontend bundle): POST /rest/v1/categories -> 201, DELETE -> 204, POST /rest/v1/badges -> 201. Any visitor could rename/delete everyone's categories or badges. Fixed by enabling RLS + SELECT-only policy on both. Audit test rows were cleaned up; tables verified back to original state (categories ids 1-5, badges empty).",
+        "AUDIT-2: created_at/used_at/earned_at were `timestamp` (no tz). now() is timestamptz and gets silently flattened to UTC. In an IST (UTC+5:30) date-deadline app this causes off-by-one-day errors near midnight. Converted to timestamptz. expiry_date deliberately stays `date` -- a printed best-before is a calendar date, not an instant.",
+        "AUDIT-3: FKs to auth.users had no ON DELETE, defaulting to NO ACTION -- deleting a user with any inventory row would fail with an FK violation. Now ON DELETE CASCADE. category_id -> ON DELETE SET NULL (retiring a category must not delete the user's food). badge_id -> CASCADE.",
+        "AUDIT-4: profiles row was to be inserted client-side after signUp() (Module 2 plan). Fragile (crash between the two calls orphans the auth user) and doesn't work for Google OAuth, which returns from redirect already authenticated with no 'just signed up' hook. Replaced with an AFTER INSERT trigger on auth.users (public.handle_new_user, security definer, search_path pinned to ''). Existing users backfilled. >>> MODULE 2 MUST NOT insert into profiles -- the trigger owns it.",
+        "AUDIT-5: no indexes on the columns RLS puts in EVERY query's WHERE clause. Added (user_id,status) for Module 4's list, partial (expiry_date) where status='active' for Module 8's cron scan, and (user_id) on user_badges.",
+        "AUDIT-6: bare auth.uid() in policies re-evaluates per row; wrapped in (select auth.uid()) so the planner hoists it to an InitPlan (Supabase's documented RLS perf guidance). Also made WITH CHECK explicit on UPDATE policies -- note this was NOT a hole before, Postgres falls back to the USING expression when WITH CHECK is omitted.",
+        "AUDIT-7: added check (quantity > 0). Module 3's React Hook Form validation is UX, not enforcement -- the REST endpoint is public.",
+        "AUDIT-DEFERRED (design decision, revisit at Module 9): profiles.points and user_badges remain directly writable by their owner, so a user can set their own points or award themselves badges from devtools, bypassing the client-side criteria logic. Fix if wanted: revoke update(points) from authenticated + move awards into SECURITY DEFINER functions. Left as-is for now since Module 9's reward logic doesn't exist yet and this is a trust-the-user college project."
       ]
     },
     "2": {
@@ -98,7 +111,9 @@
       "notes": []
     }
   },
-  "pending_user_actions": [],
+  "pending_user_actions": [
+    "Run supabase/002_hardening.sql in the Supabase SQL Editor (fixes the critical world-writable categories/badges hole found in the Opus audit, plus timestamptz/FK/trigger/index fixes)."
+  ],
   "key_config": {
     "supabase_url": "https://rrrgwvndhubaxoxeklex.supabase.co",
     "supabase_anon_key": "set in .env.local (gitignored) -- verified live via /auth/v1/health returning HTTP 200",
