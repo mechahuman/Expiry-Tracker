@@ -74,8 +74,9 @@
         "done_when_checklist_passed": true,
         "opus_hardening_audit": "done",
         "hardening_sql_written": "done",
-        "hardening_sql_run_by_user": "pending_user_run",
-        "hardening_verified": "pending"
+        "hardening_sql_run_by_user": "done",
+        "hardening_verified_critical_hole_closed": "done",
+        "hardening_verified_remaining": "pending_user_run_verify_hardening_sql"
       },
       "notes": [
         "I do not have Postgres/DB credentials (only VITE_SUPABASE_ANON_KEY, not the DB password or a Management API token), so schema DDL can't be run by me directly -- user ran supabase/schema.sql in the Supabase SQL Editor.",
@@ -112,7 +113,7 @@
     }
   },
   "pending_user_actions": [
-    "Run supabase/002_hardening.sql in the Supabase SQL Editor (fixes the critical world-writable categories/badges hole found in the Opus audit, plus timestamptz/FK/trigger/index fixes)."
+    "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {
     "supabase_url": "https://rrrgwvndhubaxoxeklex.supabase.co",

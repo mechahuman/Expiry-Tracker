@@ -57,6 +57,14 @@ Also fixed:
 
 **Deferred (design decision, revisit at Module 9):** `profiles.points` and `user_badges` are still directly writable by their owner, so points and badges can be self-awarded from devtools, bypassing the client-side criteria logic. Fixable via `revoke update(points)` + SECURITY DEFINER award functions. Left alone for now — Module 9's logic doesn't exist yet.
 
+**Verified after user ran `002_hardening.sql`** — re-ran the identical anon-key attack:
+- `POST /categories` → `42501` denied (was 201)
+- `POST /badges` → `42501` denied (was 201)
+- `DELETE /categories?name=eq.Snacks` → 204 but **zero rows affected**; Snacks still present. (With RLS on and no DELETE policy, no rows match, so it's a silent no-op — PostgREST reports 204 regardless. Not a leak.)
+- Reads still return all 5 categories.
+
+`supabase/verify_hardening.sql` added to check the parts the public API can't see (timestamptz, FK cascades, signup trigger, indexes, profile coverage, quantity constraint) — every row should read PASS.
+
 ---
 
 ## Module 2 — Auth & Onboarding (not started)
