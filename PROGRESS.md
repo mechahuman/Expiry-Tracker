@@ -76,3 +76,34 @@ Next up. Recommended model per plan: **Sonnet 5** (well-trodden Supabase Auth pa
 - **Email confirmation OFF** during development (Supabase → Auth → Providers → Email → disable "Confirm email"). Added to the launch checklist to re-enable before real users.
 
 **Carry-in from the audit:** do **not** insert the `profiles` row in the signup flow — the `on_auth_user_created` trigger handles it atomically for every signup path. A client-side insert would be redundant and would fail on PK conflict. This supersedes the original roadmap's Module 2 step 3.
+
+## 2026-08-19 — Module 2 (Auth & Onboarding) built
+Installed `react-router-dom`. Files added:
+- `src/store/authStore.js` — Zustand store: `session`, `loading`, `hasOnboarded` (localStorage-backed), `setSession`, `completeOnboarding`, `signOut`.
+- `src/components/ProtectedRoute.jsx` — gates `/home`.
+- `src/pages/Onboarding.jsx` — 3 slides, CSS scroll-snap carousel, no library.
+- `src/pages/Login.jsx` — React Hook Form, login/signup toggle in one screen.
+- `src/pages/Home.jsx` — empty state + logout; reads the user's own `profiles` row.
+- `src/App.jsx` — `BrowserRouter`, routes, and the auth bootstrap (`getSession()` then `onAuthStateChange`).
+- `src/index.css` — replaced Vite's demo styles (fixed 1126px, purple) with mobile-first tokens on the teal that matches the manifest.
+- `vercel.json` — SPA rewrite. Deleted `src/App.css`.
+
+Three decisions worth recording because they're non-obvious:
+- **The `loading` flag is load-bearing.** Supabase restores sessions asynchronously, so `ProtectedRoute` must wait for the initial `getSession()` to resolve. Without it, refreshing on `/home` bounces a logged-in user to `/login` before the session arrives.
+- **`vercel.json` rewrite is required**, not optional polish. Vite's dev server has an SPA fallback built in, so direct navigation to `/login` works locally and would have 404'd only in production — exactly the kind of bug that shows up after deploy.
+- **Home reads the `profiles` row on purpose.** It's not decoration: if that read succeeds, it proves the `on_auth_user_created` trigger fired *and* that RLS lets a user read their own row. If it errors, one of those two is broken.
+
+`npm run lint` clean, `npm run build` succeeds, all four routes serve.
+
+**BLOCKER — email confirmation is still ON.** Tested the real signup API: `POST /auth/v1/signup` created the auth user but returned `confirmation_sent_at` and **no** `access_token`, and the follow-up password login returned HTTP 400. The flow can't complete until it's disabled. (Also learned: Supabase rejects `@example.com` as an invalid address — use a real-looking domain for API tests.)
+
+### Module 2 browser test script (run after disabling email confirmation)
+1. `npm run dev` → open the local URL. First visit should land on **Onboarding**.
+2. Swipe through the 3 slides, tap **Get started** → lands on **Login**.
+3. Tap **Create one**, sign up with any email + 6-char password → should land straight on **Home**.
+4. Home footer should read **"Points: 0"** — that's the trigger-created profile row being read back through RLS. If it shows a red "Profile error", the trigger or the RLS policy is wrong.
+5. **Refresh the page** → should stay on Home, not bounce to Login. (This is the `loading`-flag behaviour.)
+6. Manually type `/home` in the URL bar while logged out → should redirect to Login.
+7. Tap **Log out** → back to Login. Type `/home` again → still redirects.
+8. Reload the app entirely → should skip Onboarding this time and go straight to Login (localStorage flag).
+9. After pushing: repeat steps 6–7 on the **deployed Vercel URL** to confirm the `vercel.json` rewrite works in production.

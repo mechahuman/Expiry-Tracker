@@ -97,8 +97,8 @@
     },
     "2": {
       "name": "Auth & Onboarding",
-      "status": "not_started",
-      "started": null,
+      "status": "in_progress",
+      "started": "2026-08-19",
       "completed": null,
       "decisions": {
         "auth_methods": "Email/password only. Google OAuth DEFERRED to a later standalone pass (needs a Google Cloud project + consent screen + redirect URIs from the user). Build the login screen so a Google button can slot in later without rework.",
@@ -106,20 +106,43 @@
         "email_confirmation": "OFF during development (Supabase Dashboard -> Authentication -> Providers -> Email -> disable 'Confirm email'). MUST be re-enabled before real users -- see launch_checklist."
       },
       "tasks": {
-        "install_react_router": "pending",
-        "onboarding_carousel": "pending",
-        "login_signup_screen": "pending",
+        "install_react_router": "done",
+        "onboarding_carousel": "done",
+        "login_signup_screen": "done",
         "google_oauth": "deferred_by_decision",
-        "auth_state_listener_zustand": "pending",
-        "route_protection": "pending",
+        "auth_state_listener_zustand": "done",
+        "route_protection": "done",
+        "home_empty_state": "done",
+        "vercel_spa_rewrite": "done",
+        "lint_and_build_pass": "done",
+        "browser_tested": "BLOCKED -- email confirmation still ON in Supabase",
         "done_when_checklist_passed": false
       },
+      "files_added": [
+        "src/store/authStore.js -- Zustand: session, loading, hasOnboarded (localStorage-backed), setSession, completeOnboarding, signOut",
+        "src/components/ProtectedRoute.jsx -- gates /home; waits on `loading` before redirecting",
+        "src/pages/Onboarding.jsx + .css -- 3 slides, CSS scroll-snap, no library",
+        "src/pages/Login.jsx + .css -- React Hook Form, login/signup mode toggle",
+        "src/pages/Home.jsx + .css -- empty state, logout, reads own profiles row",
+        "src/App.jsx -- BrowserRouter, routes, auth bootstrap (getSession + onAuthStateChange)",
+        "src/index.css -- replaced Vite demo styles with mobile-first tokens (teal #0f9d8a matching manifest)",
+        "vercel.json -- SPA rewrite; without it /login and /home 404 on Vercel",
+        "DELETED src/App.css (Vite template leftover)"
+      ],
       "notes": [
-        "DO NOT insert into profiles on signup. The on_auth_user_created trigger (added in 002_hardening.sql) creates the profile row atomically for every signup path. A client-side insert would be redundant and would fail on PK conflict. This overrides the original roadmap's Module 2 step 3."
+        "DO NOT insert into profiles on signup. The on_auth_user_created trigger (added in 002_hardening.sql) creates the profile row atomically for every signup path. A client-side insert would be redundant and would fail on PK conflict. This overrides the original roadmap's Module 2 step 3.",
+        "The `loading` flag in authStore is load-bearing: Supabase restores sessions asynchronously, so ProtectedRoute must wait for it or refreshing on /home bounces a logged-in user to /login.",
+        "vercel.json SPA rewrite is required for BrowserRouter -- direct navigation to /login or /home would otherwise 404 on Vercel (Vite's dev server has this fallback built in, so the bug only shows up in production).",
+        "Login.jsx handles the no-session-returned case (email confirmation enabled) by showing a 'check your inbox' notice, so re-enabling confirmation for launch won't silently break the screen.",
+        "BLOCKER FOUND 2026-08-19 via live API test: email confirmation is STILL ENABLED. POST /auth/v1/signup created the auth user but returned confirmation_sent_at and no access_token; the follow-up password login then returned HTTP 400. User must disable it: Supabase -> Authentication -> Providers -> Email -> turn off 'Confirm email'.",
+        "Note: Supabase rejects @example.com addresses (email_address_invalid) -- use a real-looking domain when testing signup via the API.",
+        "Test auth users created during testing that should be cleaned up later: m2test1787142475@fastmail.com (id 924ab176-5658-4375-84e6-b96046ea8f75), plus the Module 1 test-a/test-b users."
       ]
     }
   },
   "pending_user_actions": [
+    "REQUIRED for Module 2: Supabase -> Authentication -> Providers -> Email -> turn OFF 'Confirm email'. Verified still enabled 2026-08-19; signup returns no session and login fails with 400 until this is off.",
+    "Then browser-test the Module 2 flow (see PROGRESS.md Module 2 test script).",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {

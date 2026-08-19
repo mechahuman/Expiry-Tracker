@@ -1,30 +1,56 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
-import './App.css'
+import { useAuthStore } from './store/authStore'
+import ProtectedRoute from './components/ProtectedRoute'
+import Onboarding from './pages/Onboarding'
+import Login from './pages/Login'
+import Home from './pages/Home'
 
-function App() {
-  const [status, setStatus] = useState('checking')
+/** Decides where "/" lands, based on onboarding + session state. */
+function RootRedirect() {
+  const session = useAuthStore((s) => s.session)
+  const loading = useAuthStore((s) => s.loading)
+  const hasOnboarded = useAuthStore((s) => s.hasOnboarded)
 
-  useEffect(() => {
-    // auth.getSession() just confirms the client can reach the Supabase API —
-    // it doesn't depend on any table existing yet (schema lands in Module 1).
-    supabase.auth.getSession().then(({ error }) => {
-      if (error) {
-        console.error('Supabase connection error:', error.message)
-        setStatus('error')
-      } else {
-        console.log('Supabase connection OK')
-        setStatus('connected')
-      }
-    })
-  }, [])
-
-  return (
-    <section id="center">
-      <h1>Expiry Tracker</h1>
-      <p>Supabase status: {status}</p>
-    </section>
-  )
+  if (loading) return <div className="splash">Loading…</div>
+  if (!hasOnboarded) return <Navigate to="/onboarding" replace />
+  return <Navigate to={session ? '/home' : '/login'} replace />
 }
 
-export default App
+export default function App() {
+  const setSession = useAuthStore((s) => s.setSession)
+
+  useEffect(() => {
+    // Restore any session persisted from a previous visit...
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+
+    // ...then keep the store in sync for the rest of the app's lifetime.
+    // This is what makes login, logout, and token refresh propagate everywhere
+    // without any component needing to know about them.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+
+    return () => subscription.unsubscribe()
+  }, [setSession])
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
