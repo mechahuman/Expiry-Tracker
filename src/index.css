@@ -109,7 +109,8 @@ button:disabled {
   padding: 8px;
 }
 
-input {
+input,
+select {
   font: inherit;
   width: 100%;
   padding: 13px 14px;
@@ -119,16 +120,51 @@ input {
   color: var(--text-h);
 }
 
-input:focus {
+input:focus,
+select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
   border-color: transparent;
+}
+
+.field-warning {
+  color: var(--accent-dark);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.field {
+  display: block;
+}
+
+.field > span {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-h);
+  margin-bottom: 6px;
 }
 
 .field-error {
   color: var(--danger);
   font-size: 13px;
   margin-top: 6px;
+}
+
+.form-banner {
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+}
+
+.form-banner.error {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.form-banner.notice {
+  color: var(--accent-dark);
+  background: var(--accent-bg);
 }
 
 /* Full-screen centered state, used while the session is being restored. */

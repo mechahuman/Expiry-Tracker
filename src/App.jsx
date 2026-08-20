@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Home from './pages/Home'
+import AddItem from './pages/AddItem'
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {
@@ -46,6 +47,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/add"
+          element={
+            <ProtectedRoute>
+              <AddItem />
             </ProtectedRoute>
           }
         />

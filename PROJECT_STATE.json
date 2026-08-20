@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "2 Auth & Onboarding",
+  "current_module": "3 Manual Entry",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -97,9 +97,9 @@
     },
     "2": {
       "name": "Auth & Onboarding",
-      "status": "in_progress",
+      "status": "done",
       "started": "2026-08-19",
-      "completed": null,
+      "completed": "2026-08-20",
       "decisions": {
         "auth_methods": "Email/password only. Google OAuth DEFERRED to a later standalone pass (needs a Google Cloud project + consent screen + redirect URIs from the user). Build the login screen so a Google button can slot in later without rework.",
         "routing": "react-router-dom (to install). Real URLs are needed to make the 'logged-out users cannot reach Home by URL' checklist item genuinely testable, and Modules 3-9 each need their own screen anyway.",
@@ -115,8 +115,8 @@
         "home_empty_state": "done",
         "vercel_spa_rewrite": "done",
         "lint_and_build_pass": "done",
-        "browser_tested": "BLOCKED -- email confirmation still ON in Supabase",
-        "done_when_checklist_passed": false
+        "browser_tested": "done -- user disabled email confirmation, confirmed working signup/login in browser (screenshot: logged in as test-b, Home showing Points: 0)",
+        "done_when_checklist_passed": true
       },
       "files_added": [
         "src/store/authStore.js -- Zustand: session, loading, hasOnboarded (localStorage-backed), setSession, completeOnboarding, signOut",
@@ -136,13 +136,56 @@
         "Login.jsx handles the no-session-returned case (email confirmation enabled) by showing a 'check your inbox' notice, so re-enabling confirmation for launch won't silently break the screen.",
         "BLOCKER FOUND 2026-08-19 via live API test: email confirmation is STILL ENABLED. POST /auth/v1/signup created the auth user but returned confirmation_sent_at and no access_token; the follow-up password login then returned HTTP 400. User must disable it: Supabase -> Authentication -> Providers -> Email -> turn off 'Confirm email'.",
         "Note: Supabase rejects @example.com addresses (email_address_invalid) -- use a real-looking domain when testing signup via the API.",
-        "Test auth users created during testing that should be cleaned up later: m2test1787142475@fastmail.com (id 924ab176-5658-4375-84e6-b96046ea8f75), plus the Module 1 test-a/test-b users."
+        "Test auth users created during testing that should be cleaned up later: m2test1787142475@fastmail.com (id 924ab176-5658-4375-84e6-b96046ea8f75), plus the Module 1 test-a/test-b users.",
+        "MODULE 2 COMPLETE 2026-08-20. NOTE: test-a@example.com's actual password is NOT 'TestPass123!' (that was only ever a suggested example) -- user hit 'Invalid login credentials' with it. test-b@example.com's real password IS whatever the user set and used successfully. Don't assume either password in future sessions -- use the signup API to mint a fresh known-password test user instead (see Module 3 verification approach)."
+      ]
+    },
+    "3": {
+      "name": "Manual Entry",
+      "status": "done",
+      "started": "2026-08-20",
+      "completed": "2026-08-20",
+      "tasks": {
+        "item_form_component_built": "done",
+        "add_item_route": "done",
+        "home_button_wired": "done",
+        "home_flash_banner": "done",
+        "select_styling_added": "done",
+        "shared_field_form_banner_moved_to_index_css": "done",
+        "lint_and_build_pass": "done",
+        "api_level_verification": "done",
+        "browser_tested_by_user": "pending_user"
+      },
+      "decisions": {
+        "reusable_form": "Built src/components/ItemForm.jsx as a standalone component (not inlined into AddItem.jsx) because Module 7 (Verify Details, not yet built) explicitly reuses 'the exact form fields from Module 3' to let Voice/OCR pre-fill it. Props: initialValues (partial, for Module 7's pre-fill), inputMethod (defaults 'manual'), onSaved(item) callback. The component is deliberately ignorant of navigation -- callers decide what happens after save.",
+        "cancel_semantics_belong_to_the_page": "AddItem.jsx owns its own Cancel button rather than ItemForm having one, because Module 7's cancel behavior differs ('discard draft, return to capture screen') -- keeping that logic in the page shell avoids ItemForm needing a mode-dependent cancel prop later."
+      },
+      "files_added": [
+        "src/components/ItemForm.jsx + .css -- reusable form (name/quantity/unit/category/expiry_date), fetches categories on mount, validates quantity>0 client-side to match the DB check constraint, soft-warns (doesn't block) on a past expiry_date",
+        "src/pages/AddItem.jsx + .css -- page shell at /add, Cancel button, renders ItemForm with inputMethod='manual'"
+      ],
+      "files_changed": [
+        "src/App.jsx -- added /add route behind ProtectedRoute",
+        "src/pages/Home.jsx -- 'Add your first item' button now navigates to /add (was disabled); reads location.state.flash and shows a 3s success banner after a save, then clears it from history state so it doesn't reappear on back/refresh",
+        "src/pages/Home.css -- removed unused .coming-soon, added .home-flash",
+        "src/index.css -- select now styled identically to input; MOVED .field/.field>span/.form-banner(+.error/.notice) here from Login.css since ItemForm needed them too -- relying on Login.jsx's import order to make them globally available was fragile (would break if pages later become React.lazy code-split)",
+        "src/pages/Login.css -- removed the classes moved to index.css"
+      ],
+      "notes": [
+        "Verified end-to-end via the REST API using a freshly-signed-up test user (m3test<timestamp>@fastmail.com, password TestPass123!) rather than guessing test-a/test-b's passwords:",
+        "  1. Valid insert (with correct user_id, quantity=2, unit=l, input_method=manual) -> HTTP 201, row returned correctly.",
+        "  2. quantity=0 -> HTTP 400, rejected by check constraint inventory_items_quantity_positive (confirms client validation matches a real DB-level guard, not just UX).",
+        "  3. input_method='typed' (not in manual/voice/ocr) -> HTTP 400, rejected by inventory_items_input_method_check.",
+        "  4. Insert claiming a different user's UUID as user_id -> HTTP 403, rejected by RLS (42501) -- confirms Module 1's RLS still holds under a real write from Module 3's exact insert shape.",
+        "  5. Read-back showed only this user's own row. Test row deleted afterward (HTTP 204), table confirmed empty again.",
+        "This test run created one more throwaway auth user (m3test...@fastmail.com) -- add to the batch cleanup of test-a/test-b/m2test/m3test users later.",
+        "npm run lint and npm run build both pass clean.",
+        "Browser UI test (button click -> form -> submit -> flash banner -> past-date warning) NOT YET run by the user -- the API test proves the data layer is correct but not that the React form itself renders/behaves right."
       ]
     }
   },
   "pending_user_actions": [
-    "REQUIRED for Module 2: Supabase -> Authentication -> Providers -> Email -> turn OFF 'Confirm email'. Verified still enabled 2026-08-19; signup returns no session and login fails with 400 until this is off.",
-    "Then browser-test the Module 2 flow (see PROGRESS.md Module 2 test script).",
+    "Browser-test Module 3: Home -> 'Add your first item' -> fill form -> Save -> should land back on Home with a flash banner reading the item name; try a past expiry date to see the non-blocking warning; try quantity 0/blank/negative name to see client-side validation.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {
@@ -159,8 +202,8 @@
   "launch_checklist": [
     "Re-enable Supabase email confirmation (Auth -> Providers -> Email -> 'Confirm email') -- disabled during development for faster test loops.",
     "Replace the placeholder solid-teal PWA icons in public/ (icon-192.png, icon-512.png) with real branded artwork.",
-    "Delete the Module 1 RLS test users (test-a / test-b) from Authentication -> Users.",
+    "Delete throwaway test auth users from Authentication -> Users: test-a@example.com, test-b@example.com, m2test1787142475@fastmail.com, m3test<timestamp>@fastmail.com.",
     "Decide on gamification integrity: profiles.points and user_badges are currently writable by their owner, so points/badges can be self-awarded from devtools. See Module 1 AUDIT-DEFERRED."
   ],
-  "last_updated": "2026-08-19"
+  "last_updated": "2026-08-20"
 }

@@ -107,3 +107,35 @@ Three decisions worth recording because they're non-obvious:
 7. Tap **Log out** → back to Login. Type `/home` again → still redirects.
 8. Reload the app entirely → should skip Onboarding this time and go straight to Login (localStorage flag).
 9. After pushing: repeat steps 6–7 on the **deployed Vercel URL** to confirm the `vercel.json` rewrite works in production.
+
+**MODULE 2 COMPLETE 2026-08-20.** Confirmed by user: signup/login working in-browser after disabling "Confirm email" (screenshot showed logged in as `test-b@example.com`, Home showing "Points: 0"). One gotcha along the way: `test-a@example.com`'s real password is **not** `TestPass123!` — that was only ever an example I suggested when creating it back in Module 1, never confirmed. Don't assume test user passwords in future sessions; mint a fresh one via signup instead when a known password is needed for API testing.
+
+---
+
+## 2026-08-20 — Module 3 (Manual Entry) built
+
+**Architectural call made up front:** Module 7 (Verify Details, not yet built) explicitly reuses "the exact form fields from Module 3" so Voice/OCR can pre-fill them. So the form is `src/components/ItemForm.jsx` — a standalone, reusable component, not inlined into a page. It takes `initialValues` (partial, for Module 7's pre-fill later), `inputMethod` (defaults `'manual'`), and an `onSaved(item)` callback; it's deliberately ignorant of navigation. `src/pages/AddItem.jsx` is the thin page shell at `/add` that owns the Cancel button and decides what happens after save (navigate to `/home` with a flash message) — cancel semantics stay in the page because Module 7's cancel behavior differs ("discard draft, return to capture screen").
+
+Fields: name (required), quantity (required, must be `> 0` — matches the DB's `check (quantity > 0)` from `002_hardening.sql`, not just "non-negative"), unit (static dropdown: pcs/g/kg/ml/l/packs), category (dropdown fetched from `categories`), expiry date (native date input, past dates allowed through with a non-blocking warning per the roadmap's "warn, don't hard-block").
+
+**Refactor while building this:** `.field`/`.form-banner` classes lived in `Login.css`. `ItemForm` needed them too, and relying on `Login.jsx` happening to be imported elsewhere to make them globally available was fragile — would silently break if pages later get code-split with `React.lazy` (plausible, given the lazy-loading pattern already planned for Modules 5/6). Moved them to `index.css` where the other shared elements (`.btn-primary`, `input`) already live. Also extended `input`'s styling to `select`, since this is the first module needing dropdowns.
+
+`npm run lint` and `npm run build` both pass clean.
+
+**Verified end-to-end via the REST API** (signed up a fresh `m3test...@fastmail.com` test user rather than guessing existing passwords, matching the Module 2 lesson above):
+1. Valid insert (correct `user_id`, `quantity: 2`, `unit: l`, `input_method: manual`) → **201**, row returned correctly.
+2. `quantity: 0` → **400**, rejected by `inventory_items_quantity_positive` — confirms the client-side validation isn't just UX, it mirrors a real DB guard.
+3. `input_method: "typed"` (not in `manual`/`voice`/`ocr`) → **400**, rejected by the check constraint.
+4. Insert claiming a different user's UUID as `user_id` → **403**, rejected by RLS — confirms Module 1's isolation still holds under Module 3's exact insert shape.
+5. Read-back showed only the one row belonging to this user. Test row deleted afterward, confirmed clean.
+
+**Not yet done — needs the user:** the browser test. The API test proves the data layer is correct (RLS + constraints + insert shape all line up), but not that the React form itself renders and behaves correctly (validation messages, the past-date warning, the flash banner on return to Home).
+
+### Module 3 browser test script
+1. `npm run dev` → log in → on Home, tap **"Add your first item"**.
+2. Try submitting empty → Name and Expiry date should show inline errors; Quantity/Unit have defaults so won't.
+3. Enter a name, set quantity to `0` → inline "Must be greater than 0" error, blocked from submitting.
+4. Fill everything validly but pick an expiry date **before today** → should show "This date is in the past." but still let you submit.
+5. Submit a fully valid item → should land back on **Home** with a banner like `"Amul milk" added`, which fades after ~3 seconds.
+6. Refresh Home right after → the banner should **not** reappear (it's cleared from history state, not just hidden).
+7. Tap **Cancel** from the Add screen → should return to Home with no banner and nothing saved.

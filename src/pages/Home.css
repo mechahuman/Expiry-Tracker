@@ -41,9 +41,8 @@
   margin-top: 8px;
 }
 
-.coming-soon {
-  font-size: 13px;
-  color: var(--text-muted);
+.home-flash {
+  margin: 16px 24px 0;
 }
 
 .home-footer {
