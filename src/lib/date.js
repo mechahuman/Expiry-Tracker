@@ -10,6 +10,12 @@ export function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+/** A Date object as a local y-m-d string (same local-vs-UTC caveat as above). */
+export function toISODateString(date) {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 /**
  * Whole days between two y-m-d strings (positive = dateStr is in the future).
  * `new Date('2026-08-20')` parses as UTC midnight for that calendar date --

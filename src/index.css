@@ -106,6 +106,19 @@ button:disabled {
   background: var(--accent-dark);
 }
 
+.btn-secondary {
+  background: var(--accent-bg);
+  color: var(--accent-dark);
+  font-weight: 600;
+  padding: 14px 20px;
+  width: 100%;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
 .btn-text {
   background: none;
   color: var(--accent);
@@ -169,6 +182,12 @@ select:focus {
 .form-banner.notice {
   color: var(--accent-dark);
   background: var(--accent-bg);
+}
+
+/* Balances a leading "Cancel" button's width so a centered page title in a
+   space-between header stays visually centered. Used by Add/Voice/Verify. */
+.header-spacer {
+  width: 54px;
 }
 
 /* Full-screen centered state, used while the session is being restored. */

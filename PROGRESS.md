@@ -173,3 +173,44 @@ Added `src/lib/badges.js` — a documented no-op `checkBadgeProgress(userId)` st
 5. Type into the **search box** → list narrows to matching names live, no page reload.
 6. Tap **"Mark as used"** on an item → it should disappear from the list immediately.
 7. Refresh the page → the used item should stay gone (confirms it's a real DB update, not just local state).
+
+*(Still outstanding — user moved to Module 5 without confirming this one.)*
+
+---
+
+## 2026-08-20 — Module 5 (Voice Input) built, + Module 7's Verify screen brought forward
+
+Three decisions taken before building:
+- **Verify screen built properly now** rather than a throwaway handoff. `src/pages/VerifyItem.jsx` is effectively Module 7 for the voice path; when Module 6 lands, Module 7 reduces to pointing OCR at the same screen. Avoids building it twice.
+- **vosk-browser deferred.** Its model is a ~50MB download, and among current browsers only Firefox lacks `SpeechRecognition` — Chrome (desktop + Android) and Safari both have it, which covers this PWA's actual install targets. Unsupported browsers get an explicit "not supported here, type it instead" screen. `src/lib/speech.js` is written as an interface vosk can slot behind later with no UI change.
+- **Vitest added** so the parser — the genuinely risky part — is verifiable without a microphone.
+
+### The parser, and why the ordering matters
+`src/lib/voiceParser.js` turns "two packs of milk expiring 25th August" into `{name: 'Milk', quantity: 2, unit: 'packs', expiry_date: '2026-08-25'}`.
+
+Quantity+unit is matched **first**, and any chrono date hit overlapping that span is discarded. Without that, chrono reads the "two" in "two packs" as *2 o'clock*, swallows the number, and the quantity silently disappears — a wrong-but-plausible result, which is the exact failure mode this module is prone to. There's a regression test named for it.
+
+Two other non-obvious bits: the transcript is lowercased but **never re-spaced** before matching, because collapsing whitespace shifts string indices out of alignment with what chrono sees and corrupts the span arithmetic used to cut the name out. And chrono runs with `forwardDate: true`, since an expiry date is always the *upcoming* 25th of August, not the past one.
+
+Throughout, the roadmap's "blank is safer than wrong" rule holds: anything not confidently extracted stays `null` for the user to fill in on Verify.
+
+**The tests immediately earned their keep.** The bare-number fallback originally matched digits only, so "three bottles" silently dropped the quantity — "bottles" isn't one of the six DB units, so the quantity+unit rule didn't fire either, and the number fell through both paths. Now number words are matched too, with `a`/`an` deliberately excluded from that path (alone they're articles, not counts) while still counting when bound to a real unit, as in "a packet of bread". 11 tests passing.
+
+### Bundle finding worth carrying into Module 6
+chrono-node code-split correctly into its own chunk (43kB gzipped; the app shell only grew ~8kB). **But** the Workbox `globPatterns` precaches *every* emitted JS chunk, including lazily-imported ones — so `import()` keeps a library out of the app-shell bundle while the service worker still downloads it at install time. That's a fair trade for chrono (it buys offline voice parsing), but it would completely undo the Module 0 lazy-load decision for Tesseract.js/OpenCV.js. Note left inline in `vite.config.js`; exclude those chunks when Module 6 lands.
+
+`npm run lint`, `npm test` (11 passing), and `npm run build` all clean. All routes serve.
+
+**I cannot verify this one myself** — speech recognition needs a real microphone and a browser, with no headless path. The parser is fully tested; the speech wrapper and mic UI are not.
+
+### Module 5 browser test script
+Mic access requires HTTPS, so use the deployed URL (localhost also works).
+1. Home → **"Add by voice"** → browser should prompt for mic permission → allow.
+2. Tap the mic. It should pulse, and your words should appear live as you speak.
+3. Say **"two packs of milk expiring 25th August"** → should land on **Check the details** with Name `Milk`, Quantity `2`, Unit `packs`, Expiry `2026-08-25`, each tagged **detected**.
+4. Try a sparser phrase like **"paneer"** → only Name filled, everything else blank (blank, *not* wrongly guessed).
+5. Try **"curd expiring tomorrow"** → date should resolve to actual tomorrow.
+6. Edit a pre-filled field, then **Save item** → lands on Home with the flash banner, item in the list.
+7. Tap **"Discard and try again"** → returns to the mic screen, nothing saved.
+8. **Deny** mic permission once → should show a clear "Microphone access was blocked" message rather than hanging.
+9. If you have Firefox handy: open `/voice` there → should show the "not supported in this browser" screen with a working "Type it instead" link.

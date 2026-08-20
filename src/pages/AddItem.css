@@ -16,11 +16,6 @@
   font-size: 17px;
 }
 
-/* Balances the "Cancel" button's width so the title stays visually centered. */
-.header-spacer {
-  width: 54px;
-}
-
 .add-item-body {
   padding: 24px;
 }

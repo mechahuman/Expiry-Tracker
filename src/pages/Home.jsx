@@ -143,9 +143,14 @@ export default function Home() {
           </span>
           <h2>Nothing here yet</h2>
           <p>Items you add will show up here with their expiry dates.</p>
-          <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
-            Add your first item
-          </button>
+          <div className="add-actions">
+            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+              Add your first item
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
+              🎙️ Add by voice
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -194,9 +199,14 @@ export default function Home() {
             </ul>
           )}
 
-          <button type="button" className="btn-primary fab" onClick={() => navigate('/add')}>
-            + Add item
-          </button>
+          <div className="add-actions fab">
+            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+              + Add item
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
+              🎙️ Voice
+            </button>
+          </div>
         </>
       )}
 

@@ -7,6 +7,8 @@ import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import AddItem from './pages/AddItem'
+import VoiceInput from './pages/VoiceInput'
+import VerifyItem from './pages/VerifyItem'
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {
@@ -55,6 +57,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AddItem />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/voice"
+          element={
+            <ProtectedRoute>
+              <VoiceInput />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/verify"
+          element={
+            <ProtectedRoute>
+              <VerifyItem />
             </ProtectedRoute>
           }
         />

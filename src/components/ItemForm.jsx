@@ -7,13 +7,25 @@ import './ItemForm.css'
 
 const UNITS = ['pcs', 'g', 'kg', 'ml', 'l', 'packs']
 
+/** Small tag marking a field that Voice/OCR filled in rather than the user. */
+function DetectedTag() {
+  return <span className="detected-tag">detected</span>
+}
+
 /**
- * Reusable add/verify form -- shared by Module 3 (Manual Entry) and, later,
- * Module 7 (Verify Details) which pre-fills this same form from Voice/OCR
- * output via `initialValues`. Keep this component ignorant of navigation;
- * callers decide what happens after a save via `onSaved`.
+ * Reusable add/verify form -- shared by Module 3 (Manual Entry) and Module 7
+ * (Verify Details), which pre-fills it from Voice/OCR output via
+ * `initialValues` and flags those fields via `detectedFields`. Keep this
+ * component ignorant of navigation; callers decide what happens after a save
+ * via `onSaved`.
  */
-export default function ItemForm({ initialValues = {}, inputMethod = 'manual', onSaved }) {
+export default function ItemForm({
+  initialValues = {},
+  detectedFields = {},
+  inputMethod = 'manual',
+  submitLabel = 'Save item',
+  onSaved,
+}) {
   const session = useAuthStore((s) => s.session)
   const [categories, setCategories] = useState([])
   const [submitError, setSubmitError] = useState('')
@@ -73,19 +85,24 @@ export default function ItemForm({ initialValues = {}, inputMethod = 'manual', o
   return (
     <form className="item-form" onSubmit={handleSubmit(onSubmit)} noValidate>
       <label className="field">
-        <span>Name</span>
+        <span>
+          Name
+          {detectedFields.name && <DetectedTag />}
+        </span>
         <input
           type="text"
           placeholder="e.g. Amul milk"
           {...register('name', { required: 'Name is required' })}
         />
         {errors.name && <p className="field-error">{errors.name.message}</p>}
-        {/* Voice/OCR (Module 7) will tag pre-filled fields here; manual entry has nothing to tag. */}
       </label>
 
       <div className="field-row">
         <label className="field">
-          <span>Quantity</span>
+          <span>
+            Quantity
+            {detectedFields.quantity && <DetectedTag />}
+          </span>
           <input
             type="number"
             step="any"
@@ -100,7 +117,10 @@ export default function ItemForm({ initialValues = {}, inputMethod = 'manual', o
         </label>
 
         <label className="field">
-          <span>Unit</span>
+          <span>
+            Unit
+            {detectedFields.unit && <DetectedTag />}
+          </span>
           <select {...register('unit', { required: true })}>
             {UNITS.map((u) => (
               <option key={u} value={u}>
@@ -124,7 +144,10 @@ export default function ItemForm({ initialValues = {}, inputMethod = 'manual', o
       </label>
 
       <label className="field">
-        <span>Expiry date</span>
+        <span>
+          Expiry date
+          {detectedFields.expiry_date && <DetectedTag />}
+        </span>
         <input
           type="date"
           {...register('expiry_date', { required: 'Expiry date is required' })}
@@ -139,7 +162,7 @@ export default function ItemForm({ initialValues = {}, inputMethod = 'manual', o
       {submitError && <p className="form-banner error">{submitError}</p>}
 
       <button type="submit" className="btn-primary" disabled={isSubmitting}>
-        {isSubmitting ? 'Saving…' : 'Save item'}
+        {isSubmitting ? 'Saving…' : submitLabel}
       </button>
     </form>
   )
