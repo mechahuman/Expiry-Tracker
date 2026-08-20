@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { categoriesInUse, matchesFilter } from '../lib/itemFilters'
 import { checkBadgeProgress } from '../lib/badges'
 import ItemCard from '../components/ItemCard'
+import PushPrompt from '../components/PushPrompt'
 import './Home.css'
 
 export default function Home() {
@@ -160,6 +161,11 @@ export default function Home() {
         </div>
       ) : (
         <>
+          {/* Only offered once there's actually something worth reminding
+              about -- see the note in PushPrompt about spending the browser's
+              one permission prompt carefully. */}
+          <PushPrompt userId={session.user.id} />
+
           <div className="home-controls">
             <input
               type="search"

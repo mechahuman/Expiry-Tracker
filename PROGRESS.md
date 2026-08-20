@@ -293,3 +293,38 @@ That last one is the interesting failure. It survived because the logic sat inli
 2. **Module 6 scan script** above — and watch that the **second scan is noticeably faster than the first**. That's the worker reuse working.
 3. Tab should show the new icon and read "Expiry Tracker".
 4. On Android, reinstall to the home screen and check the icon isn't clipped or ringed in white.
+
+**Confirmed working 2026-08-20.** OCR reads dates correctly most of the time on real packaging, so **Module 6 phase 2's OCR.space fallback was judged unnecessary and dropped.** ZXing barcode stays optional — it's the only route to filling in product names, which are blank after every scan today.
+
+**MODULE 7 COMPLETE** — the Verify screen was built during Module 5 and has now been exercised by both the Voice and OCR paths, which is exactly its Done-when checklist.
+
+---
+
+## 2026-08-20 — Module 8 (Notifications) — code complete, needs deploying
+
+### Web Push instead of Firebase
+The roadmap specced FCM. We went with **standard Web Push + VAPID** instead: no Firebase project, no Firebase SDK in the bundle, one fewer third-party account. Coverage for a PWA is the same — Chrome, Edge, Firefox, and Safari 16.4+ once installed to the home screen — because FCM's web support is a wrapper over this same browser API. Keys are generated locally and cost nothing.
+
+**Table name deviates from the roadmap** for the same reason: it specced `push_tokens`, which is FCM's model of one opaque token per device. Web Push issues a *subscription object* — an endpoint URL plus two encryption keys — so the table is `push_subscriptions` and matches that shape.
+
+### The service worker had to change modes
+`vite-plugin-pwa` was in `generateSW` mode, which auto-writes the worker — and an auto-written worker can't carry custom `push` and `notificationclick` listeners. Switched to **`injectManifest`** with a hand-written `src/sw.js` that does the precaching Workbox was doing, plus the push handlers. This was forced by the feature, not a preference.
+
+### Decisions
+- **Daily digest at 09:00 IST**, covering anything expiring within 3 days. One notification a day, not a stream.
+- **Permission asked from a dismissible card on Home**, and only once you actually have items. Deliberate: a browser-level denial is close to unrecoverable — buried in site settings — so the one browser prompt is only spent on someone who's already said yes inside the app.
+- **No dedup bookkeeping.** A daily digest repeats by design: something 3 days out gets mentioned on day 3, 2 and 1. That's what a digest is.
+
+### Details worth knowing
+- The Edge Function derives "today" **in IST**, not UTC, so a manual mid-afternoon test agrees with the 9am cron run. The cron expression itself is UTC (`30 3 * * *`) — if the reminder time moves, both must change together.
+- **Dead subscriptions get retired.** A push service returning 404/410 means the browser threw the subscription away permanently (uninstall, cleared data, revoked permission), so those rows get `expired_at` set and the job stops retrying them every morning. Other errors are treated as transient and left alone.
+- **The endpoint refuses to run without `CRON_SECRET` configured.** An open endpoint that can push to every user is worse than a broken one.
+- The message builder is a dependency-free file so Vitest can import it despite the function running on Deno — **10 tests**, including that an already-overdue item reads "expires today" rather than "in −2 days".
+
+47 tests passing, lint and build clean, service worker verified to contain both handlers after minification.
+
+### Two risks I can't clear myself
+1. **`npm:web-push` in Deno.** Supabase Edge Functions support npm specifiers via Deno's Node compatibility and this is the common approach, but it's the single most likely thing to fail on first deploy. If it does, the fallback is a Deno-native push library or hand-rolled RFC 8291 encryption.
+2. **Supabase free-tier pausing.** Flagged all the way back in the original roadmap analysis: a free project pauses after ~1 week of inactivity, and a paused project runs no cron jobs. Reminders stop *silently*, with nothing in `cron.job_run_details` — because the scheduler isn't running to log anything. Check for a paused project before debugging the cron.
+
+**I cannot test push delivery** — it needs a real device, a granted permission, and the deployed HTTPS service worker.

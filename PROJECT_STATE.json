@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "6 OCR Scanning (phase 1 built, awaiting user browser test) -- hardening pass done 2026-08-20",
+  "current_module": "8 Notifications (code complete, awaiting user deploy + device test)",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -304,7 +304,7 @@
         "lint_test_build_pass": "done",
         "ocrspace_fallback": "deferred_to_phase_2",
         "zxing_barcode": "deferred_to_phase_2",
-        "browser_tested_by_user": "pending_user -- REQUIRES A REAL CAMERA AND REAL PACKAGING, I cannot test this myself"
+        "browser_tested_by_user": "done -- user reported dates read correctly most of the time on real packaging"
       },
       "files_added": [
         "src/lib/ocrParser.js -- parseOcrText(text) -> {expiry_date, detected, source, text}. Pure text, no camera needed. `source` names which rule fired (months-from-manufacture / labelled-expiry / unlabelled-date) so a wrong read is debuggable.",
@@ -329,7 +329,68 @@
         "PARSER BUG #2 FOUND BY TESTS (a real latent bug, exposed by fixing #1): the alpha-month pattern matched ANY three letters, so 'MFG 01/2026 EXP 01/2028' parsed as '26 EXP 01' -- reading the label itself as a month name and swallowing both real dates. Fixed by baking the twelve month abbreviations into the regex instead of validating after the match.",
         "BUNDLE -- verified empirically: dist contains NO .wasm and NO traineddata. Only a ~17kB tesseract.js wrapper reaches dist (emitted as assets/src-*.js, NOT tesseract*.js -- an earlier globIgnores pattern silently failed to match because of this). Tesseract fetches worker.min.js, the ~4MB WASM core and language data from cdn.jsdelivr.net at runtime. So the Module 5 precache worry turned out to be moot here; the ineffective globIgnores was removed and the comment corrected rather than left claiming a protection that wasn't real.",
         "CONSEQUENCE FOR MODULE 10 (PWA offline): scanning requires a network connection and a reachable jsdelivr CDN. OCR will NOT work offline. Voice also needs network (Chrome's speech recognition is server-side). Only manual entry is truly offline-capable.",
-        "CANNOT SELF-VERIFY: camera capture and real OCR accuracy need a physical camera and real packaging. The text parser and histogram maths are fully unit-tested; the camera pipeline and actual recognition quality are not. Browser test script in PROGRESS.md."
+        "CANNOT SELF-VERIFY: camera capture and real OCR accuracy need a physical camera and real packaging. The text parser and histogram maths are fully unit-tested; the camera pipeline and actual recognition quality are not. Browser test script in PROGRESS.md.",
+        "MODULE 6 PHASE 1 COMPLETE 2026-08-20 -- user confirmed dates read correctly most of the time. PHASE 2 (OCR.space fallback) therefore JUDGED UNNECESSARY and dropped; ZXing barcode remains optional and is the only way product names would get filled in (they are always blank after a scan today)."
+      ]
+    },
+    "7": {
+      "name": "Verify Details Screen",
+      "status": "done",
+      "started": "2026-08-20",
+      "completed": "2026-08-20",
+      "notes": [
+        "Built during Module 5 rather than in sequence, because Voice had nothing to hand off to otherwise -- the roadmap itself advises building this screen's shape early. src/pages/VerifyItem.jsx + src/components/ItemForm.jsx (initialValues + detectedFields props).",
+        "Roadmap's Done-when checklist is satisfied: the same screen handles input arriving from BOTH Voice and OCR (verified by the user in Modules 5 and 6), pre-filled fields are editable before saving, and 'Discard and try again' returns to the right capture screen per inputMethod without writing a partial row."
+      ]
+    },
+    "8": {
+      "name": "Notifications (Web Push expiry reminders)",
+      "status": "code_complete_pending_user_deploy",
+      "started": "2026-08-20",
+      "completed": null,
+      "decisions": {
+        "web_push_not_fcm": "User chose standard Web Push + VAPID over the roadmap's Firebase Cloud Messaging. No Firebase project, no Firebase SDK in the bundle, one fewer third-party account. Coverage is the same for a PWA (Chrome/Edge/Firefox, Safari 16.4+ installed to home screen) because FCM's web support is a wrapper over this same API. VAPID keys generated locally and free.",
+        "schedule": "Daily digest at 09:00 IST covering everything expiring within 3 days. One notification per day rather than a stream.",
+        "permission_prompt": "Dismissible card on Home, shown only once the user actually has items -- never on load. A browser-level denial is near-unrecoverable (buried in site settings), so the single browser prompt is only spent on someone who already said yes in-app.",
+        "no_dedup_state": "A daily digest deliberately repeats: an item 3 days out is mentioned on day 3, 2 and 1. That's the point of a digest, so no last_notified_at bookkeeping was added."
+      },
+      "tasks": {
+        "vapid_keys_generated": "done",
+        "push_subscriptions_table_sql": "done (supabase/003_push_subscriptions.sql) -- NOT YET RUN by user",
+        "service_worker_push_handlers": "done",
+        "frontend_subscribe_flow": "done",
+        "permission_prompt_ui": "done",
+        "edge_function": "done (supabase/functions/send-expiry-reminders/) -- NOT YET DEPLOYED",
+        "cron_schedule_sql": "done (supabase/004_cron_reminders.sql) -- NOT YET RUN, needs placeholders filled",
+        "message_builder_tests": "done (10 tests)",
+        "lint_test_build_pass": "done",
+        "deployed_and_device_tested": "pending_user -- REQUIRES a real device, a granted permission, and the deployed HTTPS service worker. I cannot test push delivery."
+      },
+      "files_added": [
+        "scripts/generate-vapid-keys.mjs -- one-off VAPID keypair generator (web-push, devDependency)",
+        "supabase/003_push_subscriptions.sql -- push_subscriptions table + RLS + indexes",
+        "supabase/004_cron_reminders.sql -- pg_cron + pg_net schedule, with placeholders to fill and troubleshooting queries",
+        "supabase/functions/send-expiry-reminders/index.ts -- Deno Edge Function, service-role, secret-gated",
+        "supabase/functions/send-expiry-reminders/message.ts -- pure message builder, no imports so Vitest can test it",
+        "src/sw.js -- custom service worker: Workbox precaching + push + notificationclick handlers",
+        "src/lib/push.js -- isPushSupported/getPermission/enablePushNotifications",
+        "src/components/PushPrompt.jsx + .css -- dismissible in-app permission card",
+        "src/lib/reminderMessage.test.js -- 10 tests against the Edge Function's message builder"
+      ],
+      "files_changed": [
+        "vite.config.js -- vite-plugin-pwa switched from generateSW to injectManifest (strategies/srcDir/filename), workbox key renamed to injectManifest. A generated service worker cannot carry custom push listeners, so this switch was forced, not optional.",
+        "src/pages/Home.jsx -- renders <PushPrompt> above the controls, only when items exist",
+        ".env.local + .env.local.example -- VITE_VAPID_PUBLIC_KEY",
+        "package.json -- devDeps web-push (keygen only), workbox-precaching, workbox-core (bundled into sw.js)"
+      ],
+      "notes": [
+        "TABLE NAME DEVIATES FROM ROADMAP: roadmap says push_tokens, which is FCM's model (one opaque token per device). Web Push issues a subscription object instead -- endpoint URL plus two encryption keys -- so the table is push_subscriptions and matches that shape.",
+        "The Edge Function derives 'today' in IST rather than UTC, so a manual mid-afternoon test agrees with the 09:00 cron run. The cron expression is UTC (30 3 * * *); if the reminder time ever moves, both must change together.",
+        "Dead subscriptions: a push service returning 404/410 means the browser discarded the subscription permanently (uninstall, cleared data, revoked permission). Those rows get expired_at set so the job stops retrying them every morning; other errors are treated as transient and left alone.",
+        "The endpoint is gated on a CRON_SECRET header and REFUSES TO RUN if that secret isn't configured -- an open endpoint that can push to every user is worse than a broken one.",
+        "RISK TO VERIFY AT DEPLOY: the Edge Function imports npm:web-push@3.6.7. Supabase Edge Functions support npm: specifiers via Deno's Node compatibility, and this is the common approach, but it is the single most likely thing to fail on first deploy. If it does, the fallback is a Deno-native web push library or hand-rolled RFC 8291 encryption.",
+        "KNOWN FREE-TIER LIMITATION (flagged back in the original roadmap analysis): Supabase pauses a free project after ~1 week of inactivity, and a paused project runs no cron jobs. Reminders stop silently with nothing in cron.job_run_details, because the scheduler isn't running to log anything. Check for a paused project before debugging the cron file.",
+        "CANNOT SELF-VERIFY: push delivery needs a real device, a granted permission and the deployed HTTPS service worker. The message builder is unit-tested; subscription, delivery, and the cron trigger are not."
       ]
     }
   },
@@ -359,9 +420,7 @@
     "verification": "npm run lint clean; 38 tests passing (27 pre-existing + 10 itemFilters + 1 state-file guard); npm run build clean; dist/index.html confirmed serving 'Expiry Tracker'; config-error path verified live; icons visually inspected (standard and maskable safe zone)."
   },
   "pending_user_actions": [
-    "STILL OUTSTANDING from Module 4: browser-test the list -- color-coded badges, filter chips, search-as-you-type, 'Mark as used' removing an item. NOTE the 'Expiring soon' chip was fixed in the 2026-08-20 hardening pass; it no longer includes already-expired items.",
-    "Browser-test Module 6 phase 1 (NEEDS A REAL CAMERA + REAL PACKAGING, and HTTPS -- use the deployed URL, best on a phone): Home -> Scan -> allow camera -> line a printed expiry date up inside the guide frame -> Capture -> should land on Verify with the date filled and tagged 'detected'. Report back how often it reads correctly, and paste any wrong reads so the parser can be tuned.",
-    "DECIDE after testing: whether phase 2 (OCR.space fallback for low-confidence reads + ZXing barcode for reliable product names) is worth building, based on real accuracy.",
+    "MODULE 8 SETUP (in order) -- 1. Run supabase/003_push_subscriptions.sql in the SQL Editor. 2. Add VITE_VAPID_PUBLIC_KEY to Vercel's environment variables (value is in .env.local). 3. `npx supabase login`, then `npx supabase link --project-ref rrrgwvndhubaxoxeklex`. 4. Set secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:), CRON_SECRET (any long random string). 5. `npx supabase functions deploy send-expiry-reminders`. 6. Fill the two placeholders in supabase/004_cron_reminders.sql and run it. 7. Test on a real device.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {

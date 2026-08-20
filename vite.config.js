@@ -7,6 +7,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // injectManifest rather than the default generateSW: push notifications
+      // need `push` and `notificationclick` listeners in the service worker,
+      // and a generated one can't carry custom code. src/sw.js does the
+      // precaching Workbox would have done, plus those handlers.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       manifest: {
         name: 'Expiry Tracker',
@@ -29,7 +36,7 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
         // Worth knowing: this glob precaches *every* emitted JS chunk,
         // including lazily imported ones -- so dynamic import() keeps a
