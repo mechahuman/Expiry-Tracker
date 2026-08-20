@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
-import { daysUntil } from '../lib/date'
+import { categoriesInUse, matchesFilter } from '../lib/itemFilters'
 import { checkBadgeProgress } from '../lib/badges'
 import ItemCard from '../components/ItemCard'
 import './Home.css'
@@ -26,8 +26,12 @@ export default function Home() {
 
   const [flash, setFlash] = useState(location.state?.flash ?? '')
 
+  // Returns a cancel function so callers can ignore a response that lands
+  // after the component has gone.
   const fetchItems = useCallback(() => {
-    if (!session) return
+    if (!session) return undefined
+    let cancelled = false
+
     // .eq('user_id', ...) is redundant with RLS (which already scopes every
     // query to the caller) but it's what lets this query match the
     // (user_id, status) index added in 002_hardening.sql, and it documents
@@ -39,44 +43,55 @@ export default function Home() {
       .eq('status', 'active')
       .order('expiry_date', { ascending: true })
       .then(({ data, error }) => {
+        if (cancelled) return
         if (error) setItemsError(error.message)
         else {
           setItemsError('')
           setItems(data ?? [])
         }
       })
+
+    return () => {
+      cancelled = true
+    }
   }, [session])
 
   useEffect(() => {
-    if (!session) return
+    if (!session) return undefined
+    let cancelled = false
+
     supabase
       .from('profiles')
       .select('full_name, points')
       .eq('id', session.user.id)
       .maybeSingle()
       .then(({ data, error }) => {
+        if (cancelled) return
         if (error) setProfileError(error.message)
         else if (!data) setProfileError('No profile row found for this account.')
         else setProfile(data)
       })
+
+    return () => {
+      cancelled = true
+    }
   }, [session])
 
+  // Home unmounts whenever the route changes, so this runs again on the way
+  // back from /add, /voice or /scan -- a freshly saved item is already picked
+  // up here and needs no separate refetch.
   useEffect(fetchItems, [fetchItems])
 
-  // Arriving back from /add with a flash message means an item was just
-  // saved -- that's the signal to refetch, not a route remount (Home stays
-  // mounted across the /add round-trip, so its initial-load effect won't fire
-  // again on its own).
+  // Clear the flash after a few seconds and scrub it from history state, so
+  // it doesn't reappear if the user navigates back to /home later.
   useEffect(() => {
-    if (!flash) return
-    fetchItems()
+    if (!flash) return undefined
     const timer = setTimeout(() => {
       setFlash('')
       navigate('.', { replace: true, state: {} })
     }, 3000)
     return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flash])
+  }, [flash, navigate])
 
   const handleMarkUsed = async (id) => {
     setMarkingId(id)
@@ -91,31 +106,17 @@ export default function Home() {
       return
     }
     setItems((prev) => prev.filter((it) => it.id !== id))
-    checkBadgeProgress(session.user.id)
+    // Fire-and-forget: badge progress must never block or break the action
+    // the user actually took. See the contract note in lib/badges.js.
+    checkBadgeProgress(session.user.id).catch(() => {})
   }
 
-  const categoryChips = useMemo(() => {
-    const seen = new Map()
-    for (const it of items ?? []) {
-      if (it.category_id && it.category?.name && !seen.has(it.category_id)) {
-        seen.set(it.category_id, it.category.name)
-      }
-    }
-    return [...seen.entries()].map(([id, name]) => ({ id, name }))
-  }, [items])
+  const categoryChips = useMemo(() => categoriesInUse(items), [items])
 
-  const filteredItems = useMemo(() => {
-    if (!items) return []
-    const q = search.trim().toLowerCase()
-    return items.filter((it) => {
-      const days = daysUntil(it.expiry_date)
-      if (filter === 'soon' && !(days <= 7)) return false
-      if (filter === 'expired' && !(days < 0)) return false
-      if (typeof filter === 'number' && it.category_id !== filter) return false
-      if (q && !it.name.toLowerCase().includes(q)) return false
-      return true
-    })
-  }, [items, filter, search])
+  const filteredItems = useMemo(
+    () => (items ?? []).filter((item) => matchesFilter(item, filter, search)),
+    [items, filter, search],
+  )
 
   const hasAnyItems = items && items.length > 0
 
@@ -162,6 +163,7 @@ export default function Home() {
           <div className="home-controls">
             <input
               type="search"
+              aria-label="Search your items"
               placeholder="Search your items…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}

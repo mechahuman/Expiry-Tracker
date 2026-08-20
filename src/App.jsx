@@ -1,15 +1,22 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/ProtectedRoute'
+
+// Eager: these three are the first thing anyone sees, so splitting them would
+// only add a loading flash to the critical path.
 import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import AddItem from './pages/AddItem'
-import VoiceInput from './pages/VoiceInput'
-import ScanItem from './pages/ScanItem'
-import VerifyItem from './pages/VerifyItem'
+
+// Lazy: the capture and entry screens, none of which a user necessarily opens
+// in a session. Splitting them keeps their weight -- and, through them,
+// chrono-node and tesseract.js -- out of the initial download.
+const AddItem = lazy(() => import('./pages/AddItem'))
+const VoiceInput = lazy(() => import('./pages/VoiceInput'))
+const ScanItem = lazy(() => import('./pages/ScanItem'))
+const VerifyItem = lazy(() => import('./pages/VerifyItem'))
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {
@@ -41,52 +48,54 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/add"
-          element={
-            <ProtectedRoute>
-              <AddItem />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/voice"
-          element={
-            <ProtectedRoute>
-              <VoiceInput />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/scan"
-          element={
-            <ProtectedRoute>
-              <ScanItem />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/verify"
-          element={
-            <ProtectedRoute>
-              <VerifyItem />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<div className="splash">Loading…</div>}>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add"
+            element={
+              <ProtectedRoute>
+                <AddItem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/voice"
+            element={
+              <ProtectedRoute>
+                <VoiceInput />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scan"
+            element={
+              <ProtectedRoute>
+                <ScanItem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/verify"
+            element={
+              <ProtectedRoute>
+                <VerifyItem />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

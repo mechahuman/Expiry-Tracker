@@ -6,5 +6,11 @@
  *
  * Deliberately a no-op: does nothing, never throws, doesn't need to be
  * awaited. Safe to call from anywhere before Module 9 exists.
+ *
+ * CONTRACT FOR MODULE 9: every caller treats this as fire-and-forget and
+ * swallows rejections, because awarding a badge must never block or fail the
+ * action the user actually took -- saving an item matters, gamification
+ * doesn't. Handle errors internally (log them, surface them separately);
+ * don't rely on a caller to catch them, and don't make callers await.
  */
 export async function checkBadgeProgress(_userId) {}

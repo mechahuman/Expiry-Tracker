@@ -18,6 +18,15 @@ export default defineConfig({
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          // Android crops adaptive icons to a device-chosen shape. Without a
+          // maskable entry it pillarboxes the normal icon inside a white
+          // circle; with one, the artwork fills the shape properly.
+          {
+            src: 'icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {

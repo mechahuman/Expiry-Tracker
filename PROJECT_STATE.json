@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "6 OCR Scanning (phase 1 done)",
+  "current_module": "6 OCR Scanning (phase 1 built, awaiting user browser test) -- hardening pass done 2026-08-20",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -333,7 +333,33 @@
       ]
     }
   },
-    "STILL OUTSTANDING from Module 4: browser-test the list -- color-coded badges, filter chips, search-as-you-type, 'Mark as used' removing an item.",
+  "hardening_pass_2026_08_20": {
+    "why": "User asked for a full audit of everything built so far. I read every source file and checked the live deployment. User chose to fix tiers A (visible bugs) + B (crash risks) + C (performance), design a real app icon, and land it all BEFORE browser-testing Module 6 so scanning only needs testing once.",
+    "A_visible_bugs": [
+      "A1: index.html <title> was still 'scaffold-tmp' -- the temp folder name from Module 0's create-vite workaround -- and it was LIVE on the deployed site. Now 'Expiry Tracker'. Also added meta description, meta theme-color (colours the Android address bar in browser mode; the manifest's theme_color only applies once installed) and apple-touch-icon (iOS ignores manifest icons entirely).",
+      "A2: replaced the Vite-logo favicon and Module 0's solid-teal placeholders with a real mark (carton + clock, teal #0f9d8a). scripts/generate-icons.mjs (sharp, devDependency) generates favicon.svg, icon-192, icon-512, icon-maskable-512 and apple-touch-icon from ONE glyph constant -- single source of truth, re-runnable when real artwork arrives. Added a maskable manifest entry so Android's adaptive-icon crop doesn't pillarbox the icon inside a white circle. Deleted public/icons.svg (dead Vite template file that was shipping to dist AND being precached).",
+      "A3: the 'Expiring soon' chip included already-expired items, because `days <= 7` is also true at negative day counts -- so an expired item appeared under BOTH 'Expiring soon' and 'Expired'. Fixed to `days >= 0 && days <= 7`."
+    ],
+    "A3_root_cause": "The filter logic was inline in Home.jsx and therefore untestable -- which is exactly why this survived while the voice and OCR parsers' bugs got caught. Extracted to src/lib/itemFilters.js (matchesFilter, categoriesInUse) with 10 tests, including one asserting no item can ever match both 'soon' and 'expired'.",
+    "B_crash_risks": [
+      "B1: no ErrorBoundary existed anywhere -- any render error was a blank white screen. Added src/components/ErrorBoundary.jsx wrapping <App/>. Matters more than usual here: once installed to a home screen there's no address bar to retry from, so the user needs a reload button.",
+      "B2: authStore read localStorage unguarded during store creation, i.e. at module import. In Safari private mode / blocked site data that THROWS BEFORE REACT RENDERS, taking the whole app down -- and B1's boundary cannot catch it, because it happens during import. Both read and write are now try/catch; worst case onboarding shows twice.",
+      "B3: supabaseClient threw at import when env vars were missing -- same pre-render problem, and it is exactly what a Vercel deploy with missing env vars looked like: white screen, reason only in console. Now exports `configError` and main.jsx renders an explanatory screen. VERIFIED by blanking .env.local: served HTTP 200 with the message instead of crashing; env restored after.",
+      "B4: Home double-fetched after every save. The comment claimed Home stays mounted across the /add round-trip -- FACTUALLY WRONG; react-router unmounts it on route change, so the mount effect already refetches. Removed the redundant fetchItems() from the flash effect, corrected the comment, dropped an eslint-disable suppressing a rule .oxlintrc.json doesn't even enable.",
+      "B5: ItemForm's category fetch ignored errors, so a failed load was indistinguishable from 'no categories exist' -- the dropdown silently offered only Uncategorized. Now surfaces an error.",
+      "B6: checkBadgeProgress was called without .catch() at three sites. Harmless as a no-op stub, but Module 9 fills it in and an async rejection would become three unhandled rejections at once. Added .catch() at all three and documented the fire-and-forget contract in lib/badges.js -- gamification must never block or fail the action the user actually took.",
+      "B7: added cancellation guards to Home's two fetch effects and ItemForm's category fetch (the pattern ScanItem already used), so a late response can't setState on an unmounted component."
+    ],
+    "C_performance": [
+      "C1: Tesseract.recognize() creates a worker and terminates it in a `finally` on EVERY call (confirmed by reading node_modules/tesseract.js/src/Tesseract.js), so each scan re-spun the worker and reloaded language data. Now a module-level createWorker('eng') singleton plus disposeOcr() called from ScanItem's unmount, so only the first scan of a session pays init cost. A failed init deliberately does NOT cache its rejection, or the scanner could never recover without a page reload.",
+      "C2: route code-splitting via React.lazy for /add, /voice, /scan, /verify (Login/Home/Onboarding stay eager -- first paint). Main chunk 495.42kB -> 478.73kB (146.46 -> 140.89kB gzipped), app-shell CSS 8.32kB -> 5.79kB. Modest, honestly: the remaining bulk is supabase-js + react + react-router, all unavoidably on the critical path. The structural win matters more than the number -- future heavy screens can no longer bloat the shell by default."
+    ],
+    "process_finding": "PROJECT_STATE.json had been INVALID JSON since the Module 5 session -- an edit dropped the `\"pending_user_actions\": [` opening line and nothing validated it, so the supposedly machine-readable state file silently stopped parsing for two modules. Fixed, and src/lib/projectState.test.js now parses it on every `npm test` so this cannot recur silently.",
+    "not_done_deliberately": "Tier D (hygiene) was scoped out by the user: dead Vite template files under src/assets/ (hero.png, react.svg, vite.svg -- never imported, so they don't reach dist; repo clutter only) and the README still describing the Vite template.",
+    "verification": "npm run lint clean; 38 tests passing (27 pre-existing + 10 itemFilters + 1 state-file guard); npm run build clean; dist/index.html confirmed serving 'Expiry Tracker'; config-error path verified live; icons visually inspected (standard and maskable safe zone)."
+  },
+  "pending_user_actions": [
+    "STILL OUTSTANDING from Module 4: browser-test the list -- color-coded badges, filter chips, search-as-you-type, 'Mark as used' removing an item. NOTE the 'Expiring soon' chip was fixed in the 2026-08-20 hardening pass; it no longer includes already-expired items.",
     "Browser-test Module 6 phase 1 (NEEDS A REAL CAMERA + REAL PACKAGING, and HTTPS -- use the deployed URL, best on a phone): Home -> Scan -> allow camera -> line a printed expiry date up inside the guide frame -> Capture -> should land on Verify with the date filled and tagged 'detected'. Report back how often it reads correctly, and paste any wrong reads so the parser can be tuned.",
     "DECIDE after testing: whether phase 2 (OCR.space fallback for low-confidence reads + ZXing barcode for reliable product names) is worth building, based on real accuracy.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."

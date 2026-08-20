@@ -190,6 +190,36 @@ select:focus {
   width: 54px;
 }
 
+/* Shown by ErrorBoundary, and by main.jsx when config is missing. Styled with
+   plain tokens only -- it has to render even when the app itself is broken. */
+.fatal-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.fatal-error .btn-primary {
+  max-width: 260px;
+}
+
+.fatal-error-detail {
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 /* Full-screen centered state, used while the session is being restored. */
 .splash {
   flex: 1;

@@ -258,3 +258,38 @@ Needs a real camera and real packaging — best on a phone, via the deployed HTT
 8. **Deny camera permission** → clear message plus a working "Type it instead" link.
 
 **Please paste back any wrong reads** (what was printed vs what it filled in). The parser is tuned against synthetic text; real packaging is what tells us whether phase 2 is worth building.
+
+---
+
+## 2026-08-20 — Hardening & optimization pass (full audit)
+
+User asked for an audit of everything built so far before continuing. I read every source file and checked the live deployment. Fixed tiers A (visible bugs), B (crash risks) and C (performance); hygiene was scoped out.
+
+### A — bugs that were shipping to users
+- **The deployed browser tab said `scaffold-tmp`.** That's the temp folder name from Module 0's `create-vite` workaround, never cleaned up, live on the site this whole time. Title is now "Expiry Tracker". Added meta description, `theme-color` (the manifest's `theme_color` only applies once *installed* — the meta tag is what colours the Android address bar in browser mode) and `apple-touch-icon` (iOS ignores manifest icons entirely).
+- **Real app icon** replacing the Vite logo and Module 0's solid-teal squares: a carton with a clock. `scripts/generate-icons.mjs` generates all five files from one glyph constant, so it's re-runnable when proper artwork arrives. Added a **maskable** variant — without one, Android's adaptive-icon crop pillarboxes the icon inside a white circle. Deleted `public/icons.svg`, a dead Vite file that was shipping *and* being precached.
+- **"Expiring soon" included already-expired items** — `days <= 7` is also true at −5, so expired items showed under both chips at once.
+
+That last one is the interesting failure. It survived because the logic sat inline in `Home.jsx` where nothing could test it — while the voice and OCR parsers, which are pure functions with test suites, both had their bugs caught. So rather than patching the line I extracted `src/lib/itemFilters.js` and wrote 10 tests, including one asserting no item can *ever* match both "soon" and "expired".
+
+### B — crash risks
+- **No error boundary anywhere.** Any render error was a blank white screen. Worse here than on a normal site: installed to a home screen there's no address bar to retry from, so the user needs a button.
+- **`localStorage` read unguarded at module import** in `authStore`. In Safari private mode or with site data blocked this throws *before React renders*, taking the whole app down — and an error boundary can't catch it, because it happens during import. Now guarded; worst case onboarding shows twice.
+- **Missing env vars produced a white screen.** `supabaseClient` threw at import — same pre-render problem. That's exactly what a Vercel deploy with unset env vars looked like: blank page, reason buried in the console. Now it renders an explanatory screen. Verified by actually blanking `.env.local` and confirming the app served a readable error instead of crashing.
+- **Home double-fetched after every save**, and my comment explaining why was simply wrong — it claimed Home stays mounted across the `/add` round-trip, but react-router unmounts it, so the mount effect was already refetching.
+- Silent category-load failure in `ItemForm`; unhandled `checkBadgeProgress` promises at three call sites (harmless now, but Module 9 fills that function in); missing unmount guards on three fetches.
+
+### C — performance
+- **Tesseract re-initialised on every single scan.** `Tesseract.recognize()` creates a worker and terminates it in a `finally` on every call — confirmed by reading the package source. Now a reused worker with `disposeOcr()` on unmount, so only the first scan of a session pays init cost. A failed init deliberately doesn't cache its rejection, or the scanner could never recover without a page reload.
+- **Route code-splitting** for `/add`, `/voice`, `/scan`, `/verify`. Main chunk 495 → 479 kB (146 → 141 kB gzipped), app-shell CSS 8.3 → 5.8 kB. Modest, and worth being honest about: the remaining bulk is supabase-js, react and react-router, all unavoidably on the critical path. The structural win is the real point — heavy new screens can't bloat the shell by default any more.
+
+### A process failure worth recording
+**`PROJECT_STATE.json` had been invalid JSON since the Module 5 session.** An edit dropped a key's opening line, and because nothing ever parsed the file, the supposedly machine-readable handoff state silently stopped parsing for two whole modules. Fixed, and `src/lib/projectState.test.js` now parses it on every `npm test` so it can't recur quietly.
+
+38 tests passing, lint and build clean.
+
+### What to test after this
+1. **Module 4 list checks** (still never confirmed) — especially that **"Expiring soon" no longer shows expired items**.
+2. **Module 6 scan script** above — and watch that the **second scan is noticeably faster than the first**. That's the worker reuse working.
+3. Tab should show the new icon and read "Expiry Tracker".
+4. On Android, reinstall to the home screen and check the icon isn't clipped or ringed in white.

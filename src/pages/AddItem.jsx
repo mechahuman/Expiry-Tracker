@@ -9,7 +9,8 @@ export default function AddItem() {
   const session = useAuthStore((s) => s.session)
 
   const handleSaved = (item) => {
-    checkBadgeProgress(session.user.id)
+    // Fire-and-forget -- see the contract note in lib/badges.js.
+    checkBadgeProgress(session.user.id).catch(() => {})
     navigate('/home', { state: { flash: `"${item.name}" added` } })
   }
 

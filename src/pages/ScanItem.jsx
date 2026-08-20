@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { preprocessForOcr } from '../lib/imagePreprocess'
-import { recognizeText } from '../lib/ocr'
+import { disposeOcr, recognizeText } from '../lib/ocr'
 import { parseOcrText } from '../lib/ocrParser'
 import './ScanItem.css'
 
@@ -65,6 +65,9 @@ export default function ScanItem() {
     return () => {
       cancelled = true
       stopCamera()
+      // Free the OCR worker (and its loaded language data) on the way out --
+      // it's only worth holding while the scanner is actually open.
+      disposeOcr()
     }
   }, [stopCamera])
 

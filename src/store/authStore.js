@@ -3,6 +3,27 @@ import { supabase } from '../lib/supabaseClient'
 
 const ONBOARDED_KEY = 'expiry-tracker:onboarded'
 
+// localStorage throws rather than returning null when storage is unavailable
+// -- Safari private mode, blocked site data, some embedded webviews. This runs
+// during store creation, i.e. at module import, so an unguarded access takes
+// the whole app down before React renders and before any error boundary
+// exists to catch it. Onboarding showing twice is a far better failure.
+function readOnboarded() {
+  try {
+    return localStorage.getItem(ONBOARDED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function persistOnboarded() {
+  try {
+    localStorage.setItem(ONBOARDED_KEY, 'true')
+  } catch {
+    /* Non-fatal: onboarding just won't be remembered next visit. */
+  }
+}
+
 export const useAuthStore = create((set) => ({
   session: null,
 
@@ -11,12 +32,12 @@ export const useAuthStore = create((set) => ({
   // chance to restore the stored session.
   loading: true,
 
-  hasOnboarded: localStorage.getItem(ONBOARDED_KEY) === 'true',
+  hasOnboarded: readOnboarded(),
 
   setSession: (session) => set({ session, loading: false }),
 
   completeOnboarding: () => {
-    localStorage.setItem(ONBOARDED_KEY, 'true')
+    persistOnboarded()
     set({ hasOnboarded: true })
   },
 

@@ -28,14 +28,27 @@ export default function ItemForm({
 }) {
   const session = useAuthStore((s) => s.session)
   const [categories, setCategories] = useState([])
+  const [categoriesError, setCategoriesError] = useState('')
   const [submitError, setSubmitError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
+
     supabase
       .from('categories')
       .select('id, name')
       .order('id')
-      .then(({ data }) => setCategories(data ?? []))
+      .then(({ data, error }) => {
+        if (cancelled) return
+        // Without this, a failed fetch is indistinguishable from "there are no
+        // categories" -- the dropdown just quietly offers Uncategorized only.
+        if (error) setCategoriesError("Couldn't load categories.")
+        else setCategories(data ?? [])
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const {
@@ -141,6 +154,7 @@ export default function ItemForm({
             </option>
           ))}
         </select>
+        {categoriesError && <p className="field-error">{categoriesError}</p>}
       </label>
 
       <label className="field">
