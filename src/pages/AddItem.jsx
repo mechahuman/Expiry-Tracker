@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom'
 import ItemForm from '../components/ItemForm'
+import { useAuthStore } from '../store/authStore'
+import { checkBadgeProgress } from '../lib/badges'
 import './AddItem.css'
 
 export default function AddItem() {
   const navigate = useNavigate()
+  const session = useAuthStore((s) => s.session)
 
   const handleSaved = (item) => {
+    checkBadgeProgress(session.user.id)
     navigate('/home', { state: { flash: `"${item.name}" added` } })
   }
 

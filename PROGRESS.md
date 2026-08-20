@@ -139,3 +139,37 @@ Fields: name (required), quantity (required, must be `> 0` — matches the DB's 
 5. Submit a fully valid item → should land back on **Home** with a banner like `"Amul milk" added`, which fades after ~3 seconds.
 6. Refresh Home right after → the banner should **not** reappear (it's cleared from history state, not just hidden).
 7. Tap **Cancel** from the Add screen → should return to Home with no banner and nothing saved.
+
+**MODULE 3 COMPLETE 2026-08-20** — user tested on the deployed Vercel URL and confirmed "working perfectly."
+
+---
+
+## 2026-08-20 — Module 4 (Inventory List & Mark as Used) built
+
+The inventory list lives directly on `Home.jsx` rather than a new route — it's the app's main screen, and Home already owned the empty-state placeholder Module 3 left there. Fetch query: `inventory_items` filtered to `user_id` + `status = 'active'` (matches the `(user_id, status)` index from the Module 1 hardening pass), with the category name pulled in via Supabase's embedded-resource select (`category:categories(name)`) rather than a second query — satisfies the roadmap's "filters work without extra network calls" requirement by design, not by caching.
+
+Extracted `src/lib/date.js` (`todayISO()`, `daysUntil()`) out of `ItemForm.jsx`, since `Home.jsx` needed the same local-date logic and copy-pasting it would risk the two drifting apart on a timezone edge case later. Color thresholds match the roadmap exactly: red ≤2 days (also covers already-expired), orange ≤7 days, teal beyond — added `--warning`/`--warning-bg` tokens to `index.css` since orange didn't exist yet (red and teal did).
+
+Filter chips (All / Expiring soon / Expired / one per category actually present) and the search box are pure `useMemo` filtering over the already-fetched list — no network calls per interaction. Mark-as-used does an optimistic local removal from state rather than a refetch.
+
+Added `src/lib/badges.js` — a documented no-op `checkBadgeProgress(userId)` stub, called from both `AddItem.jsx`'s save handler and `Home.jsx`'s mark-used handler. This is the hook point the roadmap calls out under Module 4 for Module 9 to fill in later; the point of adding it now is that Module 9 only needs to implement the function body, not go find where to call it from.
+
+`npm run lint` and `npm run build` both pass clean.
+
+**Verified end-to-end via the REST API** with a fresh test user:
+1. Seeded 4 items spanning the thresholds — expired (−3d), urgent (+1d), soon (+5d), fine (+60d) — across 3 categories.
+2. Ran the *exact* query `Home.jsx` uses (select + category join + `user_id`/`status` filter + `order by expiry_date`) → correct rows, correct ordering (expired-first), category names joined correctly.
+3. Marked one item used (`PATCH status=used, used_at=...`) → succeeds, the item drops out of the active-filtered query but the row itself is preserved (not deleted).
+4. An update attempt using only the anon key (no real session) affected **0 rows** — RLS silently filters rather than erroring. First time an UPDATE has actually been tested under RLS (Modules 1–3 only exercised SELECT/INSERT).
+5. All test data cleaned up, confirmed empty.
+
+**Not yet done — needs the user:** actually looking at this on a screen. The API test proves the data and query logic are correct, but filter-chip interaction, live search-as-you-type, and whether the color-coded badges read correctly at a glance all need real eyes.
+
+### Module 4 browser test script
+1. Add 2–3 items via **"Add your first item"** with different expiry dates (e.g. tomorrow, next week, next month) and different categories.
+2. On Home: confirm each item shows a color-coded badge matching its urgency (red/orange/teal) and the right "X days left" / "Expires tomorrow" / "Expired Nd ago" text.
+3. Tap the **"Expiring soon"** chip → only items ≤7 days should remain.
+4. Tap a **category chip** → only that category's items should remain.
+5. Type into the **search box** → list narrows to matching names live, no page reload.
+6. Tap **"Mark as used"** on an item → it should disappear from the list immediately.
+7. Refresh the page → the used item should stay gone (confirms it's a real DB update, not just local state).

@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "3 Manual Entry",
+  "current_module": "4 Inventory List",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -180,12 +180,57 @@
         "  5. Read-back showed only this user's own row. Test row deleted afterward (HTTP 204), table confirmed empty again.",
         "This test run created one more throwaway auth user (m3test...@fastmail.com) -- add to the batch cleanup of test-a/test-b/m2test/m3test users later.",
         "npm run lint and npm run build both pass clean.",
-        "Browser UI test (button click -> form -> submit -> flash banner -> past-date warning) NOT YET run by the user -- the API test proves the data layer is correct but not that the React form itself renders/behaves right."
+        "Browser UI test (button click -> form -> submit -> flash banner -> past-date warning) NOT YET run by the user -- the API test proves the data layer is correct but not that the React form itself renders/behaves right.",
+        "MODULE 3 COMPLETE 2026-08-20 -- user confirmed 'working perfectly' after testing on the deployed Vercel URL."
+      ]
+    },
+    "4": {
+      "name": "Inventory List & Mark as Used",
+      "status": "done",
+      "started": "2026-08-20",
+      "completed": "2026-08-20",
+      "tasks": {
+        "fetch_active_items_scoped_to_user": "done",
+        "days_left_color_coding": "done",
+        "filter_chips_all_soon_expired_category": "done",
+        "search_bar": "done",
+        "mark_as_used": "done",
+        "empty_state_vs_no_matches_state": "done",
+        "check_badge_progress_stub": "done",
+        "lint_and_build_pass": "done",
+        "api_level_verification": "done",
+        "browser_tested_by_user": "pending_user"
+      },
+      "decisions": {
+        "list_lives_on_home_not_a_new_route": "Inventory list is the main screen -- built into Home.jsx rather than a separate /inventory route, since Home already owned the empty-state placeholder Module 3 left as a stub.",
+        "category_join_not_separate_fetch": "Uses Supabase's embedded-resource select (`category:categories(name)`) via the category_id FK rather than a second query, satisfying the roadmap's 'no extra network calls for filters' requirement by not needing one in the first place.",
+        "extracted_shared_date_util": "Pulled todayISO() out of ItemForm.jsx into src/lib/date.js (also added daysUntil()) since Home now needs the same local-date logic -- avoids the two files drifting out of sync on a timezone edge case.",
+        "checkBadgeProgress_stub_added_at_both_call_sites": "src/lib/badges.js: a documented no-op, called (fire-and-forget) from both AddItem.jsx's onSaved and Home.jsx's handleMarkUsed, matching the roadmap's Module 9 hook points -- Module 9 only has to fill in the function body, not go find where to call it."
+      },
+      "files_added": [
+        "src/lib/date.js -- todayISO(), daysUntil() (ISO date-string math, timezone-safe by construction -- see file comment)",
+        "src/lib/badges.js -- checkBadgeProgress(userId) no-op stub for Module 9",
+        "src/components/ItemCard.jsx + .css -- one item row: name/qty/unit/category, color-coded expiry badge (red <=2d, orange <=7d, teal beyond), Mark as used button"
+      ],
+      "files_changed": [
+        "src/pages/Home.jsx -- full rewrite: fetches active items scoped to user_id+status (matches the (user_id,status) index from 002_hardening.sql), search + filter-chip state (useMemo, purely client-side against the already-fetched list), mark-as-used (optimistic local removal, not a refetch), distinguishes 'loading' vs 'zero items ever' vs 'zero items match the current filter'",
+        "src/pages/AddItem.jsx -- calls checkBadgeProgress stub in onSaved",
+        "src/components/ItemForm.jsx -- now imports todayISO from src/lib/date.js instead of a local copy",
+        "src/index.css -- added --warning/--warning-bg tokens (light+dark) for the 'soon' expiry badge; red and teal already existed, orange didn't",
+        "src/pages/Home.css -- added search input container, filter chip styles, item list, loading/no-matches states, floating add button"
+      ],
+      "notes": [
+        "Verified end-to-end via the REST API with a fresh test user (m4test<timestamp>@fastmail.com): seeded 4 items spanning the expiry thresholds (expired -3d, urgent +1d, soon +5d, ok +60d, across 3 different categories), ran the EXACT query shape Home.jsx uses (select with category join, user_id+status filter, order by expiry_date) and confirmed correct rows/ordering/category names came back.",
+        "Verified mark-as-used: PATCH status='used'+used_at succeeds (204), item disappears from the active-filtered query but the row itself is preserved (not deleted) with status='used'.",
+        "Verified an update attempt using only the anon key (no real user session) affects 0 rows (RLS silently filters it out rather than erroring) -- first time Module 4 has actually exercised UPDATE under RLS; only INSERT and SELECT had been tested before this.",
+        "All seeded test data cleaned up afterward, confirmed empty.",
+        "npm run lint and npm run build both pass clean.",
+        "Browser UI test NOT YET run by user -- filter chip interaction, search-as-you-type, and the color thresholds actually rendering correctly still need eyes on a real screen."
       ]
     }
   },
   "pending_user_actions": [
-    "Browser-test Module 3: Home -> 'Add your first item' -> fill form -> Save -> should land back on Home with a flash banner reading the item name; try a past expiry date to see the non-blocking warning; try quantity 0/blank/negative name to see client-side validation.",
+    "Browser-test Module 4: add 2-3 items with different expiry dates/categories via the (now working) Add screen, then confirm on Home: color-coded badges look right, filter chips (All/Expiring soon/Expired/category) actually filter, search box filters as you type, 'Mark as used' removes an item from the list.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {
@@ -202,7 +247,7 @@
   "launch_checklist": [
     "Re-enable Supabase email confirmation (Auth -> Providers -> Email -> 'Confirm email') -- disabled during development for faster test loops.",
     "Replace the placeholder solid-teal PWA icons in public/ (icon-192.png, icon-512.png) with real branded artwork.",
-    "Delete throwaway test auth users from Authentication -> Users: test-a@example.com, test-b@example.com, m2test1787142475@fastmail.com, m3test<timestamp>@fastmail.com.",
+    "Delete throwaway test auth users from Authentication -> Users: test-a@example.com, test-b@example.com, m2test1787142475@fastmail.com, m3test<timestamp>@fastmail.com, m4test<timestamp>@fastmail.com.",
     "Decide on gamification integrity: profiles.points and user_badges are currently writable by their owner, so points/badges can be self-awarded from devtools. See Module 1 AUDIT-DEFERRED."
   ],
   "last_updated": "2026-08-20"

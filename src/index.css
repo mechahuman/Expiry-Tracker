@@ -12,6 +12,8 @@
   --border: #e5e7eb;
   --danger: #dc2626;
   --danger-bg: rgba(220, 38, 38, 0.08);
+  --warning: #d97706;
+  --warning-bg: rgba(217, 119, 6, 0.1);
 
   --radius: 12px;
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -36,6 +38,8 @@
     --border: #2e3038;
     --danger: #f87171;
     --danger-bg: rgba(248, 113, 113, 0.1);
+    --warning: #fb923c;
+    --warning-bg: rgba(251, 146, 60, 0.12);
   }
 }
 

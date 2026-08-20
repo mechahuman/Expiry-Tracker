@@ -2,18 +2,10 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
+import { todayISO } from '../lib/date'
 import './ItemForm.css'
 
 const UNITS = ['pcs', 'g', 'kg', 'ml', 'l', 'packs']
-
-function todayISO() {
-  // Local calendar date, not UTC -- new Date().toISOString() would drift a
-  // day around midnight in IST. expiry_date is a `date` column on purpose
-  // (see supabase/002_hardening.sql), so this stays a plain y-m-d string.
-  const d = new Date()
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
 
 /**
  * Reusable add/verify form -- shared by Module 3 (Manual Entry) and, later,

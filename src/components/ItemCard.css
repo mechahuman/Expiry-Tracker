@@ -1,0 +1,62 @@
+.item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.item-card-main {
+  min-width: 0;
+}
+
+.item-name {
+  font-weight: 500;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.item-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.expiry-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.expiry-badge.urgent {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.expiry-badge.soon {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.expiry-badge.ok {
+  color: var(--accent-dark);
+  background: var(--accent-bg);
+}
+
+.mark-used {
+  font-size: 13px;
+  padding: 4px;
+}
