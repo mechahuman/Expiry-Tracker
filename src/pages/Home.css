@@ -38,11 +38,19 @@
 
 .add-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
   width: 100%;
 }
 
-.add-actions > button {
+/* Voice and Scan sit side by side under the primary button -- three across
+   is too cramped once the container narrows to phone width. */
+.add-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+.add-actions-row > button {
   flex: 1;
 }
 

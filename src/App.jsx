@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Home from './pages/Home'
 import AddItem from './pages/AddItem'
 import VoiceInput from './pages/VoiceInput'
+import ScanItem from './pages/ScanItem'
 import VerifyItem from './pages/VerifyItem'
 
 /** Decides where "/" lands, based on onboarding + session state. */
@@ -65,6 +66,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <VoiceInput />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scan"
+          element={
+            <ProtectedRoute>
+              <ScanItem />
             </ProtectedRoute>
           }
         />

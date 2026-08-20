@@ -15,14 +15,15 @@ export default function VerifyItem() {
   const location = useLocation()
   const session = useAuthStore((s) => s.session)
 
-  const { parsed, detected, transcript, inputMethod } = location.state ?? {}
+  const { parsed, detected, transcript, inputMethod, warning } = location.state ?? {}
 
   // Nothing to verify (deep link, refresh, or a back-nav after saving) --
   // there's no draft in memory to recover, so start over rather than showing
   // an empty "verify" screen.
   if (!parsed) return <Navigate to="/home" replace />
 
-  const retryPath = inputMethod === 'voice' ? '/voice' : '/add'
+  const RETRY_PATHS = { voice: '/voice', ocr: '/scan' }
+  const retryPath = RETRY_PATHS[inputMethod] ?? '/add'
 
   const handleSaved = (item) => {
     checkBadgeProgress(session.user.id)
@@ -42,9 +43,16 @@ export default function VerifyItem() {
       <div className="verify-body">
         {transcript && (
           <p className="verify-transcript">
-            You said: <em>“{transcript}”</em>
+            {inputMethod === 'voice' ? (
+              <>
+                You said: <em>“{transcript}”</em>
+              </>
+            ) : (
+              transcript
+            )}
           </p>
         )}
+        {warning && <p className="form-banner error verify-warning">{warning}</p>}
         <p className="verify-hint">
           Tagged fields were filled in automatically — check them before saving. Anything blank
           wasn’t clear enough to guess.

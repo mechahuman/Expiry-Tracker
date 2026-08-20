@@ -22,13 +22,19 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-        // NOTE for Module 6: this glob precaches *every* emitted JS chunk,
-        // including the lazily-imported ones -- so a dynamic import() keeps a
-        // library out of the app-shell bundle but Workbox still downloads it
-        // during service-worker install. That's a fair trade for chrono-node
-        // (~43kB gzipped, and it buys offline voice parsing), but it would
-        // undo the whole point for Tesseract.js/OpenCV.js. When those land,
-        // exclude their chunks here and let them fetch on demand instead.
+        // Worth knowing: this glob precaches *every* emitted JS chunk,
+        // including lazily imported ones -- so dynamic import() keeps a
+        // library out of the app-shell bundle, but Workbox still downloads it
+        // at service-worker install. That's fine for what's currently here:
+        // chrono-node is ~43kB and buys offline voice parsing, and only a
+        // ~17kB wrapper of tesseract.js reaches dist at all. Tesseract fetches
+        // its worker, ~4MB WASM core and language data straight from jsdelivr
+        // at runtime, so none of that bulk is ours to cache -- at the cost of
+        // needing a network connection the first time someone scans.
+        // If a genuinely heavy library is ever bundled locally, exclude its
+        // chunk here; note that Rollup may name it after the package's
+        // internal path (tesseract.js emits as `src-*.js`), so match on the
+        // real emitted filename rather than the package name.
       },
     }),
   ],

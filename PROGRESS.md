@@ -214,3 +214,47 @@ Mic access requires HTTPS, so use the deployed URL (localhost also works).
 7. Tap **"Discard and try again"** → returns to the mic screen, nothing saved.
 8. **Deny** mic permission once → should show a clear "Microphone access was blocked" message rather than hanging.
 9. If you have Firefox handy: open `/voice` there → should show the "not supported in this browser" screen with a working "Type it instead" link.
+
+**MODULE 5 COMPLETE 2026-08-20** — user confirmed voice input works well. That also exercises the Verify screen, so most of Module 7 is proven along with it.
+
+---
+
+## 2026-08-20 — Module 6 (OCR / Camera Scanning), phase 1
+
+Three decisions before building:
+- **Canvas 2D preprocessing instead of OpenCV.js.** Greyscale + 2× upscale + percentile contrast stretch is ~40 lines with zero dependencies, and it covers what actually helps Tesseract on faint date printing. OpenCV's real value is deskewing and perspective correction — worth adding deliberately if real photos prove it's needed, rather than paying ~8MB preemptively.
+- **Phased.** Phase 1 is the core path: camera → preprocess → Tesseract → date parse → Verify. OCR.space fallback and ZXing barcode deferred until we know real accuracy.
+- **OCR.space key deferred.** Low-confidence reads currently surface an explicit "double-check the date" warning rather than silently falling back. `CONFIDENCE_THRESHOLD` in `src/lib/ocr.js` is where the fallback hooks in later.
+
+**The parser deliberately doesn't guess the product name.** OCR of packaging picks up marketing copy, nutrition tables and legal small print — a confidently wrong name is worse than a blank field. Barcode (phase 2) is the right source for names, exactly as the roadmap argues: barcodes carry product identity even when the printed date is unreadable.
+
+### What the parser handles
+Labelled dates (`EXP` / `USE BY` / `BEST BEFORE` / `MFG`), `DD/MM` with an automatic flip to `MM/DD` when the numbers rule it out, month-only precision, and the roadmap's "X months from manufacturing" case — which chrono genuinely can't do, since it's arithmetic against *another date on the pack* rather than a phrase relative to today.
+
+Month-only dates resolve by context: `EXP 03/2027` becomes the **last** day of March (the product is good *through* the month), while a manufacturing date feeding the relative-shelf-life maths becomes the **first** day (earliest plausible make-date, so the computed expiry errs early rather than late). And `addMonths` clamps the day — `31/12/2026` + 2 months is 28 Feb, not JS's default roll-over to 3 March.
+
+### Two real bugs the tests caught
+1. **Fragment scavenging.** An impossible date like `31/02/2027` was correctly rejected as a whole — but the looser month-year pattern then salvaged `02/2027` out of the middle of it and returned end-of-February. Fixed by claiming the matched span even when the date is rejected. Reinterpreting text you've just judged invalid is precisely how a confident wrong date gets produced.
+2. **Labels parsed as months** (latent, exposed by fixing #1). The alpha-month pattern matched *any* three letters, so `MFG 01/2026 EXP 01/2028` parsed as `26 EXP 01` — reading the label itself as a month name and swallowing both real dates. Fixed by baking the twelve month abbreviations into the regex rather than validating after the match.
+
+27 tests passing project-wide. `npm run lint` and `npm run build` clean.
+
+### Bundle finding — the Module 5 worry turned out to be moot
+Verified empirically: `dist` contains **no** `.wasm` and **no** traineddata. Only a ~17kB tesseract.js wrapper reaches the bundle; the ~4MB WASM core and language data are fetched from jsdelivr at runtime. So there was nothing heavy for Workbox to over-cache after all.
+
+Worth recording that the `globIgnores: ['**/tesseract*.js']` I first wrote **silently did nothing** — Rollup emits the chunk as `src-*.js`, named after the package's internal path, not the package name. Removed it and corrected the comment rather than leaving a guard that looked protective but wasn't.
+
+**Consequence for Module 10:** scanning needs a network connection and a reachable CDN, and voice needs network too (Chrome's recognition is server-side). **Only manual entry is genuinely offline-capable** — the offline UI should say so.
+
+### Module 6 browser test script
+Needs a real camera and real packaging — best on a phone, via the deployed HTTPS URL.
+1. Home → **Scan** → allow camera → rear camera should open with a guide frame.
+2. Line up a printed **expiry/best-before date inside the frame** → **Capture**.
+3. First scan downloads the OCR engine from a CDN — expect a few seconds and a progress percentage. Later scans are faster.
+4. Should land on **Check the details** with the date filled and tagged **detected**. Name is intentionally blank.
+5. Try a **faint or low-contrast** date → should either read it, or show "the print was hard to read, double-check the date".
+6. Try a pack with **no visible date** → should say it couldn't find one, not invent one.
+7. Try a **"best before X months from manufacturing"** pack if you have one — that's the case with custom date maths behind it.
+8. **Deny camera permission** → clear message plus a working "Type it instead" link.
+
+**Please paste back any wrong reads** (what was printed vs what it filled in). The parser is tuned against synthetic text; real packaging is what tells us whether phase 2 is worth building.

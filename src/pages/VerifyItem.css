@@ -29,6 +29,10 @@
   margin-bottom: 12px;
 }
 
+.verify-warning {
+  margin-bottom: 12px;
+}
+
 .verify-hint {
   font-size: 13px;
   color: var(--text-muted);

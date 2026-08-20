@@ -147,9 +147,14 @@ export default function Home() {
             <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
               Add your first item
             </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
-              🎙️ Add by voice
-            </button>
+            <div className="add-actions-row">
+              <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
+                🎙️ Voice
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => navigate('/scan')}>
+                📷 Scan
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -203,9 +208,14 @@ export default function Home() {
             <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
               + Add item
             </button>
-            <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
-              🎙️ Voice
-            </button>
+            <div className="add-actions-row">
+              <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
+                🎙️ Voice
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => navigate('/scan')}>
+                📷 Scan
+              </button>
+            </div>
           </div>
         </>
       )}

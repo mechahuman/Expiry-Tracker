@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "5 Voice Input",
+  "current_module": "6 OCR Scanning (phase 1 done)",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -276,12 +276,66 @@
         "PARSER BUG FOUND AND FIXED BY THE TESTS: the bare-number fallback originally matched digits only, so 'three bottles' silently dropped the quantity ('bottles' isn't one of the six DB units so the quantity+unit rule didn't fire either). Now matches number words too. 'a'/'an' are deliberately excluded from the bare path -- alone they're articles, not counts -- but still count when bound to a real unit ('a packet of bread'). This is exactly the class of bug the user's decision to add tests caught.",
         "BUNDLE: chrono-node correctly code-split into its own chunk (175kB raw / 43kB gzipped, emitted as assets/esm-*.js); app shell only grew ~8kB.",
         ">>> FINDING FOR MODULE 6: the Workbox globPatterns ['**/*.{js,...}'] precaches EVERY emitted JS chunk including lazily-imported ones. So dynamic import() keeps a lib out of the app-shell bundle, but the service worker still downloads it at install time. Acceptable for chrono (43kB, and it buys offline voice parsing) but it would completely undo the Module 0 lazy-load decision for Tesseract.js/OpenCV.js. Exclude those chunks from globPatterns when Module 6 lands. Note added inline in vite.config.js.",
-        "CANNOT SELF-VERIFY: speech recognition needs a real microphone and a browser; there is no headless path. The parser is fully tested, the wrapper and UI are not. Browser test script is in PROGRESS.md."
+        "CANNOT SELF-VERIFY: speech recognition needs a real microphone and a browser; there is no headless path. The parser is fully tested, the wrapper and UI are not. Browser test script is in PROGRESS.md.",
+        "MODULE 5 COMPLETE 2026-08-20 -- user confirmed voice input works well in browser. This also validates the Verify screen, so most of Module 7 is proven."
+      ]
+    },
+    "6": {
+      "name": "OCR / Camera Scanning (PHASE 1)",
+      "status": "phase_1_done",
+      "started": "2026-08-20",
+      "completed": null,
+      "decisions": {
+        "canvas_preprocessing_not_opencv": "User chose Canvas 2D preprocessing over OpenCV.js. Greyscale + 2x upscale + percentile contrast stretch is ~40 lines with zero dependencies and covers what actually helps Tesseract on faint date printing. OpenCV's real value is deskew/perspective correction -- revisit only if real photos prove it's needed, rather than paying ~8MB preemptively.",
+        "phased_build": "User chose to build the core path first (camera -> preprocess -> Tesseract -> date parse -> Verify) and defer OCR.space fallback + ZXing barcode to phase 2, so accuracy can be measured on real packaging before adding more subsystems.",
+        "ocrspace_deferred": "User chose to defer the OCR.space API key. Low-confidence reads currently surface an explicit warning on the Verify screen instead of silently falling back. CONFIDENCE_THRESHOLD=60 in src/lib/ocr.js is where the fallback hooks in.",
+        "no_name_extraction_from_ocr": "parseOcrText deliberately does NOT guess the product name. OCR of packaging picks up marketing copy, nutrition tables and legal small print; a confidently wrong name is worse than a blank field. The barcode path (phase 2) is the reliable name source -- barcodes carry product identity even when printed dates are unreadable."
+      },
+      "tasks": {
+        "camera_ui_with_guide_frame": "done",
+        "capture_to_canvas": "done",
+        "canvas_preprocessing": "done",
+        "tesseract_ocr": "done",
+        "confidence_threshold_warning": "done",
+        "expiry_date_extraction": "done",
+        "months_from_manufacturing_math": "done",
+        "routes_into_verify_screen": "done",
+        "parser_unit_tests": "done (16 new; 27 total across the project)",
+        "lint_test_build_pass": "done",
+        "ocrspace_fallback": "deferred_to_phase_2",
+        "zxing_barcode": "deferred_to_phase_2",
+        "browser_tested_by_user": "pending_user -- REQUIRES A REAL CAMERA AND REAL PACKAGING, I cannot test this myself"
+      },
+      "files_added": [
+        "src/lib/ocrParser.js -- parseOcrText(text) -> {expiry_date, detected, source, text}. Pure text, no camera needed. `source` names which rule fired (months-from-manufacture / labelled-expiry / unlabelled-date) so a wrong read is debuggable.",
+        "src/lib/ocrParser.test.js -- 13 tests covering label forms, DD/MM vs MM/DD, month-only precision, relative shelf life, packaging noise, and garbage rejection",
+        "src/lib/imagePreprocess.js -- preprocessForOcr(source, crop) + exported contrastBounds() for testing",
+        "src/lib/imagePreprocess.test.js -- 3 tests on the percentile histogram maths (the canvas drawing path needs a browser)",
+        "src/lib/ocr.js -- recognizeText(canvas, onProgress) wrapper over tesseract.js; CONFIDENCE_THRESHOLD=60",
+        "src/pages/ScanItem.jsx + .css -- rear camera, guide-frame overlay, capture, OCR progress, error states"
+      ],
+      "files_changed": [
+        "src/App.jsx -- added /scan route behind ProtectedRoute",
+        "src/pages/VerifyItem.jsx + .css -- retry path now maps ocr->/scan (was a voice/manual binary); shows a `warning` banner for low-confidence or no-date-found reads; transcript line renders plainly for OCR rather than as 'You said:'",
+        "src/pages/Home.jsx + .css -- third input method added; buttons restructured to primary-on-top with Voice/Scan side by side, since three across is too cramped at phone width",
+        "vite.config.js -- corrected the Workbox comment (see notes)",
+        "package.json -- added tesseract.js"
+      ],
+      "notes": [
+        "PARSER -- DD/MM is assumed (Indian packaging), but flips to MM/DD when the numbers rule it out (e.g. 03/15/2027, where 15 can't be a month).",
+        "PARSER -- month-only dates resolve by context: an expiry 'EXP 03/2027' becomes the LAST day of March (the product is good through the month), while a manufacturing date used for relative-shelf-life maths becomes the FIRST day (earliest plausible make-date, so the computed expiry errs early/safe).",
+        "PARSER -- addMonths clamps the day, so '31/12/2026 BEST BEFORE 2 MONTHS' gives 2027-02-28 rather than JS Date's default roll-over to 3 March. Covered by a test.",
+        "PARSER BUG #1 FOUND BY TESTS: an implausible date like '31/02/2027' was rejected as a whole, but the looser month-year pattern then scavenged '02/2027' out of the middle of it and returned end-of-February. Fixed by claiming the matched span even when the date is rejected -- salvaging a fragment of text just judged invalid is exactly how a confident wrong date gets produced.",
+        "PARSER BUG #2 FOUND BY TESTS (a real latent bug, exposed by fixing #1): the alpha-month pattern matched ANY three letters, so 'MFG 01/2026 EXP 01/2028' parsed as '26 EXP 01' -- reading the label itself as a month name and swallowing both real dates. Fixed by baking the twelve month abbreviations into the regex instead of validating after the match.",
+        "BUNDLE -- verified empirically: dist contains NO .wasm and NO traineddata. Only a ~17kB tesseract.js wrapper reaches dist (emitted as assets/src-*.js, NOT tesseract*.js -- an earlier globIgnores pattern silently failed to match because of this). Tesseract fetches worker.min.js, the ~4MB WASM core and language data from cdn.jsdelivr.net at runtime. So the Module 5 precache worry turned out to be moot here; the ineffective globIgnores was removed and the comment corrected rather than left claiming a protection that wasn't real.",
+        "CONSEQUENCE FOR MODULE 10 (PWA offline): scanning requires a network connection and a reachable jsdelivr CDN. OCR will NOT work offline. Voice also needs network (Chrome's speech recognition is server-side). Only manual entry is truly offline-capable.",
+        "CANNOT SELF-VERIFY: camera capture and real OCR accuracy need a physical camera and real packaging. The text parser and histogram maths are fully unit-tested; the camera pipeline and actual recognition quality are not. Browser test script in PROGRESS.md."
       ]
     }
   },
     "STILL OUTSTANDING from Module 4: browser-test the list -- color-coded badges, filter chips, search-as-you-type, 'Mark as used' removing an item.",
-    "Browser-test Module 5 (NEEDS A REAL MIC -- use the deployed HTTPS URL, or localhost; mic is blocked on plain http): Home -> 'Add by voice' -> allow mic -> say 'two packs of milk expiring 25th August' -> should land on Verify with name/quantity/unit/date pre-filled and tagged 'detected'.",
+    "Browser-test Module 6 phase 1 (NEEDS A REAL CAMERA + REAL PACKAGING, and HTTPS -- use the deployed URL, best on a phone): Home -> Scan -> allow camera -> line a printed expiry date up inside the guide frame -> Capture -> should land on Verify with the date filled and tagged 'detected'. Report back how often it reads correctly, and paste any wrong reads so the parser can be tuned.",
+    "DECIDE after testing: whether phase 2 (OCR.space fallback for low-confidence reads + ZXing barcode for reliable product names) is worth building, based on real accuracy.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {
@@ -301,7 +355,7 @@
     "Delete throwaway test auth users from Authentication -> Users: test-a@example.com, test-b@example.com, m2test1787142475@fastmail.com, m3test<timestamp>@fastmail.com, m4test<timestamp>@fastmail.com.",
     "Decide on gamification integrity: profiles.points and user_badges are currently writable by their owner, so points/badges can be self-awarded from devtools. See Module 1 AUDIT-DEFERRED.",
     "Reconsider vosk-browser offline voice fallback (deferred in Module 5) if Firefox support or true offline voice is wanted.",
-    "Exclude heavy lazy chunks (Tesseract.js/OpenCV.js) from Workbox globPatterns when Module 6 lands -- see Module 5 notes."
+    "Module 10 (PWA offline) must account for this: OCR needs network + a reachable jsdelivr CDN, and voice needs network (Chrome speech recognition is server-side). Only manual entry works fully offline. Set expectations in the offline UI accordingly."
   ],
   "last_updated": "2026-08-20"
 }
