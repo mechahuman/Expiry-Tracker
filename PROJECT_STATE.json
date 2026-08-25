@@ -416,7 +416,8 @@
         "rewards_screen": "done (src/pages/Rewards.jsx, lazy-loaded route)",
         "home_integration": "done -- syncs on mount and after mark-as-used, points footer links to /rewards",
         "lint_test_build_pass": "done (57 tests)",
-        "end_to_end_verified": "BLOCKED on the user running 005_rewards.sql"
+        "sql_run_by_user": "done 2026-08-25",
+        "end_to_end_verified": "DONE 2026-08-25 via live REST API, no need for 006 script -- see notes"
       },
       "files_added": [
         "supabase/005_rewards.sql -- sync_rewards() + grant revocations + badge seed + unique constraint on badges.name",
@@ -437,6 +438,8 @@
         "IST cast in the used_before_expiry counter is deliberate: used_at is timestamptz (converted in 002) and a bare ::date resolves in the connection's UTC, which would mis-score an item used late on an Indian evening. Matches the IST reasoning in the Module 8 Edge Function.",
         "coalesce((v_progress ->> b.criteria_type)::int, 0) is what makes future badge types safe -- an unknown criteria_type reads as 0 and never unlocks, rather than erroring or awarding falsely. This is what lets streak_days/zero_waste_week be seeded later without touching the function.",
         "badges.name had no unique constraint, so the seed would have duplicated every badge on a re-run. 005 dedupes first, then adds the constraint, then upserts on it.",
+        "VERIFIED END-TO-END 2026-08-25 over the live REST API, which made the 006 script unnecessary. Four results, all as designed: (1) sync_rewards() returns HTTP 200 with the right shape; (2) PATCH /rest/v1/profiles setting points now returns 403, where the identical request returned 200 and wrote 999999 before 005 -- the hole is measurably closed; (3) the tampered 999999 recomputed itself to the correct value, proving the recompute-not-increment property; (4) one item added and used in time gave exactly 15 points (5 + 10) and unlocked First Item Added, and an immediate second call returned newly_earned: [] with points unchanged -- idempotent, no double-award. All 6 badges confirmed seeded. Test rows cleaned up.",
+        "The user hit `42501 permission denied for table profiles` when running 006 and read it as a failure -- it was the tamper test PASSING. Worth noting Postgres emits a HINT suggesting `GRANT UPDATE ON public.profiles TO authenticated`, which would reopen the exact hole this module closes. Do not follow that hint.",
         "TESTABILITY REGRESSION, stated plainly: this module's core logic is SQL, which Vitest cannot reach. That's a genuine step down from Modules 5/6/8 where tests caught real bugs before the user saw them. Mitigated by 006_verify_rewards.sql (manual) and by extracting the progress maths into a unit-tested JS helper -- but the awarding logic itself is only covered by a script someone has to remember to run."
       ]
     }
