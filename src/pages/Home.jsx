@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
 import { categoriesInUse, matchesFilter } from '../lib/itemFilters'
-import { checkBadgeProgress } from '../lib/badges'
+import { describeNewBadges, syncRewards } from '../lib/rewards'
 import ItemCard from '../components/ItemCard'
 import PushPrompt from '../components/PushPrompt'
 import './Home.css'
@@ -26,6 +26,7 @@ export default function Home() {
   const [filter, setFilter] = useState('all') // 'all' | 'soon' | 'expired' | <category_id>
 
   const [flash, setFlash] = useState(location.state?.flash ?? '')
+  const [badgeFlash, setBadgeFlash] = useState('')
 
   // Returns a cancel function so callers can ignore a response that lands
   // after the component has gone.
@@ -57,26 +58,36 @@ export default function Home() {
     }
   }, [session])
 
-  useEffect(() => {
-    if (!session) return undefined
-    let cancelled = false
-
-    supabase
-      .from('profiles')
-      .select('full_name, points')
-      .eq('id', session.user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error) setProfileError(error.message)
-        else if (!data) setProfileError('No profile row found for this account.')
-        else setProfile(data)
-      })
-
-    return () => {
-      cancelled = true
+  // Re-evaluates points and badges server-side, then reflects the result.
+  // Replaces what used to be a plain read of profiles.points: the same call
+  // now both recalculates the score and returns it, so there's no second query
+  // and no window where the footer shows a stale total.
+  const runSync = useCallback(async () => {
+    const result = await syncRewards()
+    if (!result) {
+      setProfileError('Could not load your points.')
+      return
     }
-  }, [session])
+    setProfileError('')
+    setProfile({ points: result.points })
+
+    const message = describeNewBadges(result.newly_earned)
+    if (message) setBadgeFlash(message)
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    runSync()
+  }, [session, runSync])
+
+  // Badges get their own banner rather than sharing the item-added flash --
+  // saving an item and unlocking something are two separate pieces of news and
+  // one shouldn't overwrite the other.
+  useEffect(() => {
+    if (!badgeFlash) return undefined
+    const timer = setTimeout(() => setBadgeFlash(''), 5000)
+    return () => clearTimeout(timer)
+  }, [badgeFlash])
 
   // Home unmounts whenever the route changes, so this runs again on the way
   // back from /add, /voice or /scan -- a freshly saved item is already picked
@@ -107,9 +118,10 @@ export default function Home() {
       return
     }
     setItems((prev) => prev.filter((it) => it.id !== id))
-    // Fire-and-forget: badge progress must never block or break the action
-    // the user actually took. See the contract note in lib/badges.js.
-    checkBadgeProgress(session.user.id).catch(() => {})
+    // Home doesn't remount for this, so the sync that normally happens on
+    // mount has to be triggered explicitly. Using an item before it expires is
+    // the action worth the most points, so the footer should reflect it now.
+    runSync()
   }
 
   const categoryChips = useMemo(() => categoriesInUse(items), [items])
@@ -134,6 +146,7 @@ export default function Home() {
       </header>
 
       {flash && <p className="form-banner notice home-flash">{flash}</p>}
+      {badgeFlash && <p className="form-banner notice home-flash badge-flash">{badgeFlash}</p>}
       {itemsError && <p className="form-banner error home-flash">{itemsError}</p>}
 
       {items === null ? (
@@ -230,9 +243,15 @@ export default function Home() {
 
       <footer className="home-footer">
         {profileError ? (
-          <span className="profile-error">Profile error: {profileError}</span>
+          <span className="profile-error">{profileError}</span>
         ) : (
-          <span>Points: {profile ? profile.points : '…'}</span>
+          // Doubles as the entry point to Rewards -- the score is where you'd
+          // instinctively tap to find out more about it, so it saves adding
+          // navigation chrome for a single destination.
+          <button type="button" className="points-link" onClick={() => navigate('/rewards')}>
+            <span>Points: {profile ? profile.points : '…'}</span>
+            <span className="points-link-cta">View rewards →</span>
+          </button>
         )}
       </footer>
     </div>

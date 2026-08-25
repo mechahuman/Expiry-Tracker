@@ -6,7 +6,7 @@
     "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
     "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
   ],
-  "current_module": "8 Notifications (code complete, awaiting user deploy + device test)",
+  "current_module": "9 Rewards / Badges (code complete, awaiting user to run 005_rewards.sql)",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -360,11 +360,11 @@
         "service_worker_push_handlers": "done",
         "frontend_subscribe_flow": "done",
         "permission_prompt_ui": "done",
-        "edge_function": "done (supabase/functions/send-expiry-reminders/) -- NOT YET DEPLOYED",
+        "edge_function": "done, DEPLOYED 2026-08-24 via `npx supabase functions deploy` -- npm:web-push import risk did not materialize, deploy succeeded cleanly",
         "cron_schedule_sql": "done (supabase/004_cron_reminders.sql) -- NOT YET RUN, needs placeholders filled",
         "message_builder_tests": "done (10 tests)",
         "lint_test_build_pass": "done",
-        "deployed_and_device_tested": "pending_user -- REQUIRES a real device, a granted permission, and the deployed HTTPS service worker. I cannot test push delivery."
+        "deployed_and_device_tested": "UNCONFIRMED -- user said 'move forward' 2026-08-25 without reporting back on SQL (003/004), Vercel env var, or an actual received notification. Edge Function itself is confirmed deployed; the rest of the chain (subscription -> cron -> push -> device) has not been verified end-to-end by either party. Revisit if reminders don't show up."
       },
       "files_added": [
         "scripts/generate-vapid-keys.mjs -- one-off VAPID keypair generator (web-push, devDependency)",
@@ -391,6 +391,53 @@
         "RISK TO VERIFY AT DEPLOY: the Edge Function imports npm:web-push@3.6.7. Supabase Edge Functions support npm: specifiers via Deno's Node compatibility, and this is the common approach, but it is the single most likely thing to fail on first deploy. If it does, the fallback is a Deno-native web push library or hand-rolled RFC 8291 encryption.",
         "KNOWN FREE-TIER LIMITATION (flagged back in the original roadmap analysis): Supabase pauses a free project after ~1 week of inactivity, and a paused project runs no cron jobs. Reminders stop silently with nothing in cron.job_run_details, because the scheduler isn't running to log anything. Check for a paused project before debugging the cron file.",
         "CANNOT SELF-VERIFY: push delivery needs a real device, a granted permission and the deployed HTTPS service worker. The message builder is unit-tested; subscription, delivery, and the cron trigger are not."
+      ]
+    },
+    "9": {
+      "name": "Rewards / Badges",
+      "status": "code_complete_pending_sql_run",
+      "started": "2026-08-25",
+      "completed": null,
+      "decisions": {
+        "logic_moved_into_the_database": "User chose to close the gamification-integrity gap flagged in the Module 1 audit. Points and badges are now computed and written by a SECURITY DEFINER function; the client's direct write privileges on profiles.points and user_badges are REVOKED. The browser can only call sync_rewards(), which derives the counts itself -- it never supplies a number, so it cannot lie about one.",
+        "no_user_id_parameter": "sync_rewards() takes NO arguments and reads auth.uid() from the JWT. A user_id parameter would let any caller award any account, defeating the whole design. 006_verify_rewards.sql asserts pronargs = 0 so this can't regress.",
+        "recompute_not_increment": "Points are derived from stored data on every call rather than accumulated. Idempotent by construction: repeat calls can't inflate a score, a dropped call self-corrects on the next one, and there's no running total to corrupt. This is also what lets a tampered value heal itself.",
+        "deferred_badges_skipped": "User chose to skip '7-Day Streak' (needs login-day tracking -- no such table) and 'Zero Waste Week' (needs items to flip to status='expired' -- nothing does this). Both are features in their own right, not something to bolt on for one badge each.",
+        "navigation": "Home footer points readout became a link to /rewards. No nav bar yet -- it earns its place at Module 12 when the Profile screen gives it a third destination.",
+        "badge_feedback": "Newly-earned badges surface in their own banner on Home, separate from the item-added flash, so neither piece of news overwrites the other.",
+        "progress_shown": "Rewards screen shows progress toward locked badges ('12 of 50'), not just locked/unlocked, which is why sync_rewards() returns the full progress object rather than a boolean per badge."
+      },
+      "tasks": {
+        "sql_function_and_grants": "done (supabase/005_rewards.sql) -- NOT YET RUN by user",
+        "verification_sql": "done (supabase/006_verify_rewards.sql) -- NOT YET RUN",
+        "badge_seed": "done -- 6 badges, all computable from existing data",
+        "frontend_rpc_wrapper": "done (src/lib/rewards.js, replaces the src/lib/badges.js stub which was deleted)",
+        "progress_helper_and_tests": "done (src/lib/rewardProgress.js, 10 tests)",
+        "rewards_screen": "done (src/pages/Rewards.jsx, lazy-loaded route)",
+        "home_integration": "done -- syncs on mount and after mark-as-used, points footer links to /rewards",
+        "lint_test_build_pass": "done (57 tests)",
+        "end_to_end_verified": "BLOCKED on the user running 005_rewards.sql"
+      },
+      "files_added": [
+        "supabase/005_rewards.sql -- sync_rewards() + grant revocations + badge seed + unique constraint on badges.name",
+        "supabase/006_verify_rewards.sql -- structure checks, a known-data maths check, TAMPER TESTS that must error, and an idempotency re-run check",
+        "src/lib/rewards.js -- syncRewards() RPC wrapper + describeNewBadges()",
+        "src/lib/rewardProgress.js + .test.js -- pure progress maths, unit-tested",
+        "src/pages/Rewards.jsx + .css -- points total and badge grid with progress bars"
+      ],
+      "files_changed": [
+        "src/lib/badges.js -- DELETED, replaced by src/lib/rewards.js",
+        "src/pages/Home.jsx + .css -- syncs rewards on mount and after mark-as-used; replaced the separate profiles.points read (the sync returns points, so that query was redundant); badge banner; points footer is now a link to /rewards",
+        "src/pages/AddItem.jsx, src/pages/VerifyItem.jsx -- rewards call REMOVED. Navigating unmounts them and mounts Home, which syncs itself; awarding from a screen that's about to disappear just added a race for no benefit. Also removed their now-unused useAuthStore imports.",
+        "src/App.jsx -- /rewards route, lazy-loaded behind ProtectedRoute"
+      ],
+      "notes": [
+        "VULNERABILITY CONFIRMED LIVE BEFORE THE FIX (2026-08-25): with only the public anon key and a normal user session, PATCH /rest/v1/profiles setting points=999999 returned HTTP 200 and the value was written. The parallel user_badges insert returned 23503 only because the badges table was empty (foreign key violation) -- NOT because of any security control; once seeded that insert would have succeeded too. This is exactly what 005 closes.",
+        "The tampered 999999 was deliberately LEFT IN PLACE on test user 28a4c119-77d0-42a9-a9f0-c10071750e47 (m9test<ts>@fastmail.com). After 005 runs, the first sync_rewards() call should recompute it down to the correct value -- a live demonstration of the recompute-not-increment property.",
+        "IST cast in the used_before_expiry counter is deliberate: used_at is timestamptz (converted in 002) and a bare ::date resolves in the connection's UTC, which would mis-score an item used late on an Indian evening. Matches the IST reasoning in the Module 8 Edge Function.",
+        "coalesce((v_progress ->> b.criteria_type)::int, 0) is what makes future badge types safe -- an unknown criteria_type reads as 0 and never unlocks, rather than erroring or awarding falsely. This is what lets streak_days/zero_waste_week be seeded later without touching the function.",
+        "badges.name had no unique constraint, so the seed would have duplicated every badge on a re-run. 005 dedupes first, then adds the constraint, then upserts on it.",
+        "TESTABILITY REGRESSION, stated plainly: this module's core logic is SQL, which Vitest cannot reach. That's a genuine step down from Modules 5/6/8 where tests caught real bugs before the user saw them. Mitigated by 006_verify_rewards.sql (manual) and by extracting the progress maths into a unit-tested JS helper -- but the awarding logic itself is only covered by a script someone has to remember to run."
       ]
     }
   },
@@ -421,6 +468,8 @@
   },
   "pending_user_actions": [
     "MODULE 8 SETUP (in order) -- 1. Run supabase/003_push_subscriptions.sql in the SQL Editor. 2. Add VITE_VAPID_PUBLIC_KEY to Vercel's environment variables (value is in .env.local). 3. `npx supabase login`, then `npx supabase link --project-ref rrrgwvndhubaxoxeklex`. 4. Set secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:), CRON_SECRET (any long random string). 5. `npx supabase functions deploy send-expiry-reminders`. 6. Fill the two placeholders in supabase/004_cron_reminders.sql and run it. 7. Test on a real device.",
+    "MODULE 9 REQUIRED: run supabase/005_rewards.sql in the SQL Editor. Nothing in the rewards UI works until then -- sync_rewards() returns PGRST202 (function not found) and the Rewards screen will show an error. This is also what closes the points/badge tampering hole.",
+    "MODULE 9 verification: run supabase/006_verify_rewards.sql (replace <test-uuid> with a real user id). Every check should read PASS, and the two tamper statements in STEP 5 must ERROR.",
     "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
   ],
   "key_config": {

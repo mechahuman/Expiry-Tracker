@@ -1,7 +1,5 @@
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import ItemForm from '../components/ItemForm'
-import { useAuthStore } from '../store/authStore'
-import { checkBadgeProgress } from '../lib/badges'
 import './VerifyItem.css'
 
 /**
@@ -13,7 +11,6 @@ import './VerifyItem.css'
 export default function VerifyItem() {
   const navigate = useNavigate()
   const location = useLocation()
-  const session = useAuthStore((s) => s.session)
 
   const { parsed, detected, transcript, inputMethod, warning } = location.state ?? {}
 
@@ -26,8 +23,8 @@ export default function VerifyItem() {
   const retryPath = RETRY_PATHS[inputMethod] ?? '/add'
 
   const handleSaved = (item) => {
-    // Fire-and-forget -- see the contract note in lib/badges.js.
-    checkBadgeProgress(session.user.id).catch(() => {})
+    // Rewards are synced by Home when it mounts, not from here -- see the note
+    // in AddItem.jsx.
     navigate('/home', { state: { flash: `"${item.name}" added` } })
   }
 

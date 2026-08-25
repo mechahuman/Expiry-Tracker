@@ -127,3 +127,23 @@
 .profile-error {
   color: var(--danger);
 }
+
+.badge-flash {
+  font-weight: 600;
+}
+
+.points-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.points-link-cta {
+  color: var(--accent);
+  font-weight: 600;
+}

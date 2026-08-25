@@ -1,16 +1,14 @@
 import { useNavigate } from 'react-router-dom'
 import ItemForm from '../components/ItemForm'
-import { useAuthStore } from '../store/authStore'
-import { checkBadgeProgress } from '../lib/badges'
 import './AddItem.css'
 
 export default function AddItem() {
   const navigate = useNavigate()
-  const session = useAuthStore((s) => s.session)
 
   const handleSaved = (item) => {
-    // Fire-and-forget -- see the contract note in lib/badges.js.
-    checkBadgeProgress(session.user.id).catch(() => {})
+    // No rewards call here on purpose. Navigating unmounts this screen and
+    // mounts Home, which syncs rewards itself -- doing it from a component
+    // that's about to disappear just adds a race for no benefit.
     navigate('/home', { state: { flash: `"${item.name}" added` } })
   }
 

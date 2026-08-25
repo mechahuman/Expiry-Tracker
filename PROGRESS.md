@@ -328,3 +328,41 @@ The roadmap specced FCM. We went with **standard Web Push + VAPID** instead: no 
 2. **Supabase free-tier pausing.** Flagged all the way back in the original roadmap analysis: a free project pauses after ~1 week of inactivity, and a paused project runs no cron jobs. Reminders stop *silently*, with nothing in `cron.job_run_details` — because the scheduler isn't running to log anything. Check for a paused project before debugging the cron.
 
 **I cannot test push delivery** — it needs a real device, a granted permission, and the deployed HTTPS service worker.
+
+---
+
+## 2026-08-25 — Module 9 (Rewards & Badges) — code complete, needs the SQL run
+
+### What this module actually is
+Home showed **"Points: 0"** permanently, `badges`/`user_badges` were empty, and `checkBadgeProgress()` was a no-op stub wired in back in Module 4. This fills all of it in: points for adding items and for using them before they expire, badges at milestones, and a screen to see them.
+
+### The real work: taking the score away from the browser
+Until now the browser could write its own `profiles.points` and insert its own `user_badges` rows. RLS only asked *"is this your row?"*, never *"did you earn this?"*. Flagged in the Module 1 audit, deferred to here.
+
+**I confirmed the hole was real before fixing it.** With only the public anon key and an ordinary user session:
+```
+PATCH /rest/v1/profiles  {"points": 999999}  ->  HTTP 200, value written
+```
+The parallel badge-insert attempt failed with `23503`, but *only* because the `badges` table was empty — a foreign-key violation, not a security control. Once seeded, that would have worked too.
+
+The fix moves the decision into the database. `sync_rewards()` counts the user's real items itself and writes the result; the client's write privileges on those columns are revoked outright. **The client never supplies a number, so it can't lie about one.**
+
+Two properties worth naming:
+- **It takes no user-id parameter.** It reads `auth.uid()` from the JWT. A parameter would let any caller award any account — that's the single most important line in the file, and `006_verify_rewards.sql` asserts `pronargs = 0` so it can't regress.
+- **Points are recomputed, not accumulated.** Derived from stored data every call, so repeat calls can't inflate a score and a dropped one self-corrects. It also means a tampered value heals itself — which is why I deliberately left that `999999` on the test user. The first `sync_rewards()` call after you run the SQL should collapse it back to the true value.
+
+### Smaller things worth knowing
+- The `used_before_expiry` counter casts through `Asia/Kolkata`. `used_at` is `timestamptz`, and a bare `::date` resolves in the connection's UTC — which would mis-score an item used late on an Indian evening. Same IST reasoning as the Module 8 Edge Function.
+- `coalesce((v_progress ->> b.criteria_type)::int, 0)` is what makes the deferred badges safe. Seed a `streak_days` badge later and it simply never unlocks until that key exists — no error, no false award.
+- `badges.name` had no unique constraint, so the seed would have duplicated all six on a re-run. 005 dedupes, adds the constraint, then upserts on it.
+- **Removed** the rewards call from `AddItem` and `VerifyItem`. Navigating unmounts them and mounts Home, which syncs itself — awarding from a screen that's about to disappear just added a race for nothing.
+
+### Testability — a genuine step down, stated plainly
+This module's core logic is SQL, which Vitest can't reach. Modules 5, 6 and 8 all had their risky logic in JavaScript, and tests caught real bugs there before you ever saw them. Here the awarding logic is only covered by `006_verify_rewards.sql`, a script someone has to remember to run. I extracted the progress maths into `rewardProgress.js` so at least that part is tested (10 tests), but I don't want to overstate the coverage.
+
+57 tests passing, lint and build clean, Rewards split into its own 1.2KB lazy chunk.
+
+### To finish this module
+1. Run `supabase/005_rewards.sql` in the SQL Editor. **Nothing in the rewards UI works until this happens** — `sync_rewards()` currently returns `PGRST202`, function not found.
+2. Run `supabase/006_verify_rewards.sql` (replace `<test-uuid>` with a real user id). Every check should read PASS, and **the two tamper statements in STEP 5 must ERROR** — that's the module's whole purpose.
+3. Browser: add an item → Home points rise and a "Badge unlocked" banner appears → tap the points → Rewards screen shows the unlocked badge and progress bars on the rest.

@@ -17,6 +17,7 @@ const AddItem = lazy(() => import('./pages/AddItem'))
 const VoiceInput = lazy(() => import('./pages/VoiceInput'))
 const ScanItem = lazy(() => import('./pages/ScanItem'))
 const VerifyItem = lazy(() => import('./pages/VerifyItem'))
+const Rewards = lazy(() => import('./pages/Rewards'))
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {
@@ -90,6 +91,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <VerifyItem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rewards"
+            element={
+              <ProtectedRoute>
+                <Rewards />
               </ProtectedRoute>
             }
           />
