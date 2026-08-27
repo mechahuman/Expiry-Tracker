@@ -1,8 +1,8 @@
+/* No margin of its own: it sits inside the flex column on Home, which supplies
+   both the page padding and the gap between sections. */
 .push-prompt {
-  margin: 16px 24px 0;
   padding: 16px;
-  border: 1px solid var(--accent);
-  background: var(--accent-bg);
+  background: var(--accent-soft);
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;

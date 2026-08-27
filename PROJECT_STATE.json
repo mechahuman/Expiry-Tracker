@@ -16,7 +16,7 @@
     "11 E2E Testing",
     "12 Future stub"
   ],
-  "current_module": "11 End-to-End Testing",
+  "current_module": "UI/UX rebuild done (code) -> next: 11 End-to-End Testing",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -504,6 +504,76 @@
         "The cached list is only ever written from a SUCCESSFUL response, so a failed fetch can't poison it. A cache entry whose shape doesn't match is treated as absent, since cached data outlives deploys.",
         "CANNOT SELF-VERIFY: real offline behaviour needs a browser with the network cut. Verified the built worker's contents and that the production build serves all routes; the actual offline cold-start needs DevTools offline mode or airplane mode on the phone."
       ]
+    },
+    "UI": {
+      "name": "UI/UX rebuild to ClearEat design system (Builder.io / Figma)",
+      "status": "code_complete_pending_user_visual_check",
+      "started": "2026-08-27",
+      "completed": "2026-08-27",
+      "source": {
+        "origin": "Builder.io Visual Copilot export of the ClearEat Figma, vcpImportId vcp-f0248f2e1a2f443f8abf99924f48ad5b",
+        "frames": 38,
+        "saved_to": "design/figma/*.html -- copied into the repo because Builder's api.builder.io/.../TEMP/ asset URLs are expected to expire"
+      },
+      "decisions": {
+        "dark_mode_dropped": "User chose light-only. Every one of the 38 frames is cream; the only dark colours in the export are the brand green itself and one status-bar mock. Keeping dark mode would have meant shipping a palette no designer chose. The whole @media (prefers-color-scheme: dark) block was removed from index.css.",
+        "scope_foundation_plus_existing": "User chose tokens + nav + restyle of existing screens, over a full 38-screen build. New screens (Notification Settings, Item Detail, Permissions, Splash) and migration 007 (location, notes) are NOT done.",
+        "home_split_into_two_screens": "The design's Home is a dashboard and its My Food is the list; our old Home was both. Split into /home and /food. This was required by the nav having four destinations, and is a reorganisation of existing screens rather than new work.",
+        "poppins_self_hosted": "@fontsource/poppins, latin subset only, NOT the Google Fonts CDN. A CDN link would fall back to system-ui offline -- precisely when Module 10's offline shell is doing its job. Required adding woff2 to injectManifest.globPatterns; without that the CSS was precached but the font it referenced was not.",
+        "latin_subset_only": "The bare @fontsource/poppins/400.css entrypoints pull Devanagari and latin-ext as well: 12 font files instead of 4, all precached upfront, for glyphs the UI copy never uses.",
+        "alerts_built_partially": "The nav needs four working destinations and a dead tab is worse than either alternative, so Alerts reuses useInventory + ItemCard to show real expiring items. Deliberately omits the design's per-item 'Suggested action: mash into guacamole!' copy -- that content has to come from a curated map or a model, and generating it per category would produce confident nonsense for anything unrecognised.",
+        "kg_avoided_stat_replaced": "The design's Progress screen shows '14.2 kg Avoided'. No weight is stored anywhere in the schema, and a fabricated kilo figure is exactly the sort of number people quote elsewhere. Replaced with badges-unlocked, which is real.",
+        "login_kept_despite_absence_from_design": "The export contains no auth screen at all -- zero occurrences of password/sign-in/sign-up across all 38 frames. Auth cannot be dropped because every RLS policy keys off auth.uid(), so Login was restyled into the ClearEat language rather than copied from a frame.",
+        "signout_moved_to_brand_header": "The old Home header carried Log out and was replaced wholesale; the design has no settings or profile screen to move it to. It now sits in the Home brand bar -- without it there is no way out of the account."
+      },
+      "design_tokens": {
+        "font": "Poppins (was system-ui)",
+        "brand": "#1e5e3c forest green -- headings and active nav (was #0f9d8a teal)",
+        "accent": "#4caf6d",
+        "bg": "#fff7ec cream (was #ffffff) -- cream page with white cards is the signature pairing",
+        "surface": "#ffffff (was #f9fafb) -- NOTE both --bg and --surface changed meaning; old CSS using them was audited",
+        "warning": "#ff9a3c",
+        "danger": "#e74c3c",
+        "radii": "100px pills, 12/16/20/28px"
+      },
+      "files_added": [
+        "src/components/BottomNav.jsx + .css -- 5-slot tab bar, 4 destinations + centre Add FAB",
+        "src/components/AddActions.jsx + .css -- extracted from Home, now shared with MyFood",
+        "src/hooks/useInventory.js -- items + offline cache + refetch-on-reconnect, shared by Home/MyFood/Alerts",
+        "src/lib/dashboardStats.js + .test.js -- summarise(), mostUrgent(), itemEmoji()",
+        "src/pages/MyFood.jsx + .css -- the list, split out of Home",
+        "src/pages/Alerts.jsx + .css -- partial, see alerts_built_partially",
+        "design/figma/*.html -- 38 preserved Figma exports"
+      ],
+      "files_changed": [
+        "src/index.css -- full token rewrite, dark mode removed",
+        "src/main.jsx -- Poppins latin-subset imports",
+        "src/App.jsx -- /food and /alerts routes",
+        "src/pages/Home.jsx + .css -- rebuilt as dashboard",
+        "src/pages/Onboarding.jsx + .css -- stepped slides with design copy (See It All / Eat It First / Waste Less)",
+        "src/pages/Login.jsx + .css, src/pages/Rewards.jsx + .css -> 'Your Impact'",
+        "src/components/ItemCard.jsx + .css, ItemForm.css, PushPrompt.css",
+        "vite.config.js -- ClearEat manifest, theme_color #1e5e3c, background_color #fff7ec, woff2 in globPatterns",
+        "index.html -- ClearEat title + theme-color",
+        "public/*.png + favicon.svg -- icons regenerated in brand green via sharp"
+      ],
+      "shared_css_lesson_recurrence": "Hit three more times this module: .empty-state/.empty-emoji (Home -> MyFood), .band/.band-label/.item-list (MyFood -> Alerts), .stat-row/.stat (Home -> Rewards). Each was defined in one page's stylesheet and used by another, which only works by accident of import order and breaks under code-splitting. All moved to index.css. This is now the sixth occurrence across the project.",
+      "verification": {
+        "tests": "88 passing (was 74; +9 dashboardStats, +5 expiry bands)",
+        "lint": "clean",
+        "build": "clean, precache 39 entries / 779 KiB",
+        "fonts_precached": "confirmed 4 poppins-latin woff2 in dist/sw.js -- was 0 before the globPatterns fix",
+        "module_10_intact": "createHandlerBoundToURL x2 and .mode===`navigate` x2 still in dist/sw.js",
+        "module_8_intact": "showNotification and notificationclick still in dist/sw.js",
+        "routes_serve": "/, /home, /food, /alerts, /rewards all 200 from npm run preview",
+        "visual_check_by_user": "PENDING -- cannot be verified without a browser"
+      },
+      "not_done_tracked": [
+        "Notification Settings, Item Detail, Permissions, Splash screens",
+        "migration 007 for inventory_items.location and .notes (item detail shows both)",
+        "multi-item receipt OCR (design extracts several items from a receipt; ours reads one expiry date off a package -- a feature rebuild, not a restyle)",
+        "per-item suggested actions on Alerts"
+      ]
     }
   },
   "hardening_pass_2026_08_20": {
@@ -535,7 +605,8 @@
     "MODULE 8 SETUP (in order) -- 1. Run supabase/003_push_subscriptions.sql in the SQL Editor. 2. Add VITE_VAPID_PUBLIC_KEY to Vercel's environment variables (value is in .env.local). 3. `npx supabase login`, then `npx supabase link --project-ref rrrgwvndhubaxoxeklex`. 4. Set secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (mailto:), CRON_SECRET (any long random string). 5. `npx supabase functions deploy send-expiry-reminders`. 6. Fill the two placeholders in supabase/004_cron_reminders.sql and run it. 7. Test on a real device.",
     "MODULE 9 REQUIRED: run supabase/005_rewards.sql in the SQL Editor. Nothing in the rewards UI works until then -- sync_rewards() returns PGRST202 (function not found) and the Rewards screen will show an error. This is also what closes the points/badge tampering hole.",
     "MODULE 9 verification: run supabase/006_verify_rewards.sql (replace <test-uuid> with a real user id). Every check should read PASS, and the two tamper statements in STEP 5 must ERROR.",
-    "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently."
+    "Optional: run supabase/verify_hardening.sql in the SQL Editor to confirm the non-API-visible parts of 002 landed (timestamptz, FK cascades, signup trigger, indexes, quantity check). The critical RLS fix is already verified independently.",
+    "Visually check the ClearEat UI rebuild in a browser (npm run dev): Home dashboard, My Food, Alerts, Progress, bottom nav, cream background, Poppins loading."
   ],
   "key_config": {
     "supabase_url": "https://rrrgwvndhubaxoxeklex.supabase.co",
@@ -556,5 +627,5 @@
     "Reconsider vosk-browser offline voice fallback (deferred in Module 5) if Firefox support or true offline voice is wanted.",
     "Module 10 (PWA offline) must account for this: OCR needs network + a reachable jsdelivr CDN, and voice needs network (Chrome speech recognition is server-side). Only manual entry works fully offline. Set expectations in the offline UI accordingly."
   ],
-  "last_updated": "2026-08-20"
+  "last_updated": "2026-08-27"
 }

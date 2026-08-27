@@ -1,0 +1,65 @@
+.myfood {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.myfood-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.myfood-loading {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  color: var(--text-muted);
+}
+
+.item-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  /* Chips scroll sideways on narrow screens; without this the row would wrap
+     and push the list down by an unpredictable amount. */
+  scrollbar-width: none;
+}
+
+.filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.filter-chip.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+.no-matches {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 32px 24px;
+  font-size: 14px;
+}

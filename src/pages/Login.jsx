@@ -50,8 +50,14 @@ export default function Login() {
   return (
     <div className="login">
       <header className="login-header">
-        <h1>Expiry Tracker</h1>
-        <p>{isSignup ? 'Create an account to get started.' : 'Welcome back.'}</p>
+        <p className="login-brand">ClearEat</p>
+        <p className="login-tagline">See it all. Eat it first.</p>
+        <h1>{isSignup ? 'Create your account' : 'Welcome back'}</h1>
+        <p>
+          {isSignup
+            ? 'Start tracking what’s in your kitchen.'
+            : 'Sign in to pick up where you left off.'}
+        </p>
       </header>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>

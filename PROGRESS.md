@@ -405,3 +405,82 @@ Routes are lazy-loaded since the hardening pass, so a tab open across a deploy c
 2. Still offline: the inventory should show last-synced items with "last synced …"; Voice and Scan greyed out with a reason; Add opens but warns and refuses to save.
 3. Go back online → the stale banner should clear itself without you navigating.
 4. On the phone, installed to the home screen: airplane mode → open the app → same behaviour.
+
+---
+
+## UI/UX rebuild — ClearEat design system (2026-08-27)
+
+Source: Builder.io Visual Copilot export of the ClearEat Figma (38 frames).
+The `api.builder.io/.../TEMP/` asset URLs are public but expected to expire, so
+all 38 exports are preserved in `design/figma/`.
+
+### What the design actually is
+
+Tokens extracted from the export rather than eyeballed:
+
+| Token | Value | Was |
+|---|---|---|
+| Font | Poppins | system-ui |
+| Brand | `#1e5e3c` forest green | `#0f9d8a` teal |
+| Accent | `#4caf6d` | — |
+| Background | `#fff7ec` cream | `#ffffff` |
+| Warning | `#ff9a3c` | `#d97706` |
+| Danger | `#e74c3c` | `#dc2626` |
+| Radii | 100px pills, 12/16/20/28 | flat 12px |
+
+Cream page + white cards is the signature pairing. A white page loses it.
+
+### Three structural findings
+
+1. **A 5-slot bottom nav** (Home · My Food · **+** · Alerts · Progress) on 27 of
+   38 frames. We had none. The design's Home is a *dashboard* and its My Food is
+   the list — our old Home was both, so it was split into `/home` and `/food`.
+2. **No dark mode anywhere.** Decision: dropped, light-only.
+3. **No auth screen at all** — zero password/sign-in/sign-up across all frames.
+   Auth can't go (RLS keys off `auth.uid()`), so Login was restyled instead.
+
+### Decisions worth remembering
+
+- **Poppins is self-hosted**, latin subset only, *not* the Google Fonts CDN — a
+  CDN link falls back to system-ui offline, exactly when Module 10's offline
+  shell is doing its job. This required adding `woff2` to
+  `injectManifest.globPatterns`: without it the font CSS was precached but the
+  font file it referenced was not. Verified — 0 woff2 in `dist/sw.js` before,
+  4 after.
+- **Alerts is deliberately partial.** It shows real expiring items but omits the
+  design's per-item *"Suggested action: mash into guacamole!"* copy. That has to
+  come from a curated map or a model; generating it per category would produce
+  confident nonsense for anything unrecognised.
+- **"14.2 kg Avoided" was not built.** No weight is stored anywhere, and a
+  fabricated kilo figure is exactly the sort of number that gets quoted
+  elsewhere. Replaced with badges-unlocked.
+
+### Verification
+
+- 88 tests passing (was 74) · lint clean · build clean · precache 39 entries
+- Module 10 navigation fallback still intact (`createHandlerBoundToURL` ×2)
+- Module 8 push handlers still intact
+- `/`, `/home`, `/food`, `/alerts`, `/rewards` all 200 from `npm run preview`
+
+### Browser test script
+
+1. `npm run dev`. **Home** should show a green brand bar on a cream page, a
+   greeting, and — once you have items — a priority card, a 3-up stat row, and
+   "Recently Added".
+2. Tap each of the four nav tabs. The centre **+** goes to Add.
+3. **My Food**: check the chips (All / Expired / Today / This Week / Later) and
+   that headings group the list only under "All".
+4. **Progress**: streak card, three stats, achievements grid.
+5. Confirm the font is Poppins, not system-ui — DevTools → Network → Fonts
+   should show `poppins-latin-*.woff2`.
+6. Check **dark mode is gone**: put your OS in dark mode; the app should stay
+   cream.
+7. Offline re-test (Module 10 still holds): DevTools → Network → Offline, hard
+   refresh `/home`. Shell loads, offline banner shows, **and the font is still
+   Poppins** — that last part is what the woff2 precache fix bought.
+
+### Not done (tracked)
+
+Notification Settings · Item Detail · Permissions · Splash screens; migration
+007 for `location` + `notes`; multi-item receipt OCR (a feature rebuild, not a
+restyle); per-item suggested actions on Alerts.

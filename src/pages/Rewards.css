@@ -4,73 +4,80 @@
   flex-direction: column;
 }
 
-.rewards-header {
+.rewards-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 20px 0;
+}
+
+.rewards-loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+}
+
+/* --- Streak -------------------------------------------------------------- */
+
+.streak-card {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: var(--shadow-float);
 }
 
-.rewards-header h2 {
-  font-size: 17px;
+.streak-emoji {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
 }
 
-.rewards-score {
-  text-align: center;
-  padding: 28px 24px 20px;
+.streak-title {
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.rewards-points {
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--accent);
+.streak-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
 }
 
-.rewards-points-label {
-  display: block;
-  margin-top: 4px;
-  font-size: 14px;
-  color: var(--text-muted);
-}
+/* --- Achievements -------------------------------------------------------- */
 
-.rewards-earned-count {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
-.rewards-error,
-.rewards-loading {
-  margin: 0 24px 16px;
-}
-
-.rewards-loading {
-  text-align: center;
-  color: var(--text-muted);
+.section-title {
+  margin-bottom: 10px;
 }
 
 .badge-grid {
   list-style: none;
   margin: 0;
-  padding: 0 24px 32px;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .badge-card {
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 16px 12px;
   text-align: center;
-  background: var(--bg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
 .badge-card.earned {
-  border-color: var(--accent);
-  background: var(--accent-bg);
+  background: var(--accent-soft);
 }
 
 /* Locked badges are dimmed rather than hidden -- seeing what's still out there
@@ -81,7 +88,7 @@
 }
 
 .badge-icon {
-  font-size: 34px;
+  font-size: 32px;
   line-height: 1;
 }
 
@@ -89,7 +96,7 @@
   margin-top: 8px;
   font-weight: 600;
   font-size: 14px;
-  color: var(--text-h);
+  color: var(--brand);
 }
 
 .badge-description {
@@ -101,7 +108,7 @@
 .badge-bar {
   margin-top: 10px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--border);
   overflow: hidden;
 }
@@ -109,7 +116,7 @@
 .badge-bar-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .badge-status {

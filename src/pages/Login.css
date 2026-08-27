@@ -1,3 +1,7 @@
+/* No login screen exists in the Figma -- the design goes splash → onboarding →
+   permissions → home. Auth can't simply be dropped though, since every RLS
+   policy keys off auth.uid(), so this screen is built in the ClearEat language
+   rather than copied from a frame. */
 .login {
   flex: 1;
   display: flex;
@@ -11,8 +15,29 @@
   text-align: center;
 }
 
+.login-brand {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.login-tagline {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+  margin-top: 4px;
+}
+
+.login-header h1 {
+  font-size: 22px;
+  margin-top: 24px;
+}
+
 .login-header p {
-  margin-top: 8px;
+  margin-top: 6px;
+  font-size: 14px;
 }
 
 .login form {
@@ -23,5 +48,5 @@
 
 .switch-mode {
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
 }

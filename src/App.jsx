@@ -54,6 +54,8 @@ function lazyRoute(factory) {
 // Lazy: the capture and entry screens, none of which a user necessarily opens
 // in a session. Splitting them keeps their weight -- and, through them,
 // chrono-node and tesseract.js -- out of the initial download.
+const MyFood = lazyRoute(() => import('./pages/MyFood'))
+const Alerts = lazyRoute(() => import('./pages/Alerts'))
 const AddItem = lazyRoute(() => import('./pages/AddItem'))
 const VoiceInput = lazyRoute(() => import('./pages/VoiceInput'))
 const ScanItem = lazyRoute(() => import('./pages/ScanItem'))
@@ -100,6 +102,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/food"
+            element={
+              <ProtectedRoute>
+                <MyFood />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/alerts"
+            element={
+              <ProtectedRoute>
+                <Alerts />
               </ProtectedRoute>
             }
           />

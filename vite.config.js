@@ -16,11 +16,14 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Expiry Tracker',
-        short_name: 'Expiry Tracker',
-        description: 'Track packaged food inventory and expiry dates',
-        theme_color: '#0f9d8a',
-        background_color: '#ffffff',
+        name: 'ClearEat',
+        short_name: 'ClearEat',
+        description: 'See it all. Eat it first. Track packaged food and its expiry dates.',
+        // Matches --brand and --bg in src/index.css. background_color is the
+        // colour Android paints behind the splash screen, so a mismatch here
+        // shows as a white flash before the cream app appears.
+        theme_color: '#1e5e3c',
+        background_color: '#fff7ec',
         display: 'standalone',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -37,7 +40,10 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        // woff2 matters here: Poppins is self-hosted precisely so the app keeps
+        // its typeface offline, and leaving it out of this list silently undoes
+        // that -- the CSS is cached, the font it asks for isn't.
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
         // Worth knowing: this glob precaches *every* emitted JS chunk,
         // including lazily imported ones -- so dynamic import() keeps a
         // library out of the app-shell bundle, but Workbox still downloads it

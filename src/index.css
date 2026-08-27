@@ -1,46 +1,57 @@
+/* ClearEat design system.
+   Tokens below are lifted from the Figma export in design/figma/ -- the hex
+   values are the ones that actually appear there, not approximations. The
+   design is light-only by decision: every screen in the export is cream, and
+   inventing a dark palette would mean shipping colours no designer chose. */
 :root {
-  /* Brand teal matches the PWA manifest theme_color. */
-  --accent: #0f9d8a;
-  --accent-dark: #0b7a6b;
-  --accent-bg: rgba(15, 157, 138, 0.1);
+  /* Forest green. Headings and active nav -- in this design the heading
+     colour IS the brand, which is why h1/h2 below are green rather than near-black. */
+  --brand: #1e5e3c;
+  --brand-dark: #164a2f;
+  --brand-tint: rgba(30, 94, 60, 0.08);
 
-  --text: #4b5563;
-  --text-h: #111827;
-  --text-muted: #9ca3af;
-  --bg: #ffffff;
-  --surface: #f9fafb;
+  /* Mid green. Primary actions, "fresh" state. */
+  --accent: #4caf6d;
+  --accent-dark: #3d9459;
+  --accent-soft: #ebf9f1;
+  --accent-tint: rgba(76, 175, 109, 0.1);
+  --accent-ring: rgba(76, 175, 109, 0.25);
+
+  /* Warm cream page, white cards floating on it. This pairing is the
+     signature of the design -- a white page background loses it entirely. */
+  --bg: #fff7ec;
+  --surface: #ffffff;
+  --surface-alt: #f9fafb;
   --border: #e5e7eb;
-  --danger: #dc2626;
-  --danger-bg: rgba(220, 38, 38, 0.08);
-  --warning: #d97706;
-  --warning-bg: rgba(217, 119, 6, 0.1);
 
-  --radius: 12px;
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --text-h: #1e5e3c;
+  --text: #6b7280;
+  --text-muted: #9ca3af;
 
-  font: 16px/1.5 var(--sans);
+  --warning: #ff9a3c;
+  --warning-bg: rgba(255, 154, 60, 0.12);
+  --danger: #e74c3c;
+  --danger-bg: rgba(231, 76, 60, 0.1);
+
+  --radius-sm: 12px;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 100px;
+
+  --shadow-card: 0 2px 8px rgba(30, 94, 60, 0.06);
+  --shadow-float: 0 4px 16px rgba(30, 94, 60, 0.12);
+
+  /* Height of the fixed bottom nav; pages reserve this much bottom padding so
+     the last item in a list isn't trapped underneath it. */
+  --nav-h: 68px;
+
+  --sans: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  font: 400 16px/1.5 var(--sans);
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --accent: #2dd4bf;
-    --accent-dark: #14b8a6;
-    --accent-bg: rgba(45, 212, 191, 0.12);
-
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --text-muted: #6b7280;
-    --bg: #111318;
-    --surface: #1c1f26;
-    --border: #2e3038;
-    --danger: #f87171;
-    --danger-bg: rgba(248, 113, 113, 0.1);
-    --warning: #fb923c;
-    --warning-bg: rgba(251, 146, 60, 0.12);
-  }
 }
 
 * {
@@ -49,6 +60,7 @@
 
 body {
   margin: 0;
+  background: var(--bg);
   /* Mobile-first: this is installed to a phone home screen. */
   overscroll-behavior-y: none;
 }
@@ -59,38 +71,52 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  background: var(--bg);
 }
 
 h1,
-h2 {
+h2,
+h3 {
   color: var(--text-h);
   font-weight: 600;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 h1 {
   font-size: 28px;
-  letter-spacing: -0.4px;
 }
 
 h2 {
   font-size: 20px;
-  letter-spacing: -0.2px;
+}
+
+h3 {
+  font-size: 16px;
 }
 
 p {
   margin: 0;
 }
 
+/* Small all-caps section label, e.g. "WASTE REDUCTION REPORT". */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 button {
   font: inherit;
   cursor: pointer;
   border: none;
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -98,8 +124,9 @@ button:disabled {
   background: var(--accent);
   color: #fff;
   font-weight: 600;
-  padding: 14px 20px;
+  padding: 15px 20px;
   width: 100%;
+  box-shadow: 0 2px 8px var(--accent-ring);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -107,47 +134,65 @@ button:disabled {
 }
 
 .btn-secondary {
-  background: var(--accent-bg);
-  color: var(--accent-dark);
+  background: var(--surface);
+  color: var(--brand);
   font-weight: 600;
-  padding: 14px 20px;
+  padding: 15px 20px;
   width: 100%;
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 .btn-text {
   background: none;
-  color: var(--accent);
+  color: var(--accent-dark);
   font-weight: 500;
   padding: 8px;
 }
 
+/* Destructive, used on the item detail sheet. */
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
+  padding: 15px 20px;
+  width: 100%;
+}
+
 input,
-select {
+select,
+textarea {
   font: inherit;
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  color: var(--text-h);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--brand);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
   border-color: transparent;
 }
 
-.field-warning {
-  color: var(--accent-dark);
-  font-size: 13px;
-  margin-top: 6px;
+/* White card on cream. The single most repeated shape in the design. */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .field {
@@ -158,7 +203,7 @@ select:focus {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--brand);
   margin-bottom: 6px;
 }
 
@@ -168,10 +213,16 @@ select:focus {
   margin-top: 6px;
 }
 
+.field-warning {
+  color: var(--accent-dark);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
 .form-banner {
   font-size: 14px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
 }
 
 .form-banner.error {
@@ -180,15 +231,15 @@ select:focus {
 }
 
 .form-banner.notice {
-  color: var(--accent-dark);
-  background: var(--accent-bg);
+  color: var(--brand);
+  background: var(--accent-tint);
 }
 
-/* Shared rather than page-local: Home and ItemForm both use it, and a class
-   defined in one page's stylesheet only works elsewhere by accident of import
-   order -- which breaks the moment routes are code-split, as they now are. */
+/* Shared rather than page-local: several screens use it, and a class defined
+   in one page's stylesheet only works elsewhere by accident of import order --
+   which breaks the moment routes are code-split, as they are. */
 .offline-banner {
-  color: var(--warning);
+  color: #a35c14;
   background: var(--warning-bg);
 }
 
@@ -196,6 +247,105 @@ select:focus {
    space-between header stays visually centered. Used by Add/Voice/Verify. */
 .header-spacer {
   width: 54px;
+}
+
+/* Plain title block at the top of a tab screen -- My Food, Alerts, Progress.
+   Shared for the same reason as .offline-banner above. */
+.page-header {
+  padding: 20px 20px 4px;
+}
+
+.page-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Three-across counter row, used by Home and Progress. */
+.stat-row {
+  display: flex;
+  gap: 10px;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 6px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--brand);
+  line-height: 1.1;
+}
+
+.stat.warning .stat-value {
+  color: var(--warning);
+}
+
+.stat.danger .stat-value {
+  color: var(--danger);
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Expiry-banded list, shared by My Food and Alerts. */
+.band + .band {
+  margin-top: 4px;
+}
+
+.band-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Both tab screens with a list show the same "nothing here yet" block. */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 36px 24px;
+}
+
+.empty-emoji {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.empty-state p {
+  font-size: 14px;
+}
+
+.empty-state .add-actions {
+  max-width: 320px;
+  margin-top: 8px;
 }
 
 /* Shown by ErrorBoundary, and by main.jsx when config is missing. Styled with
@@ -220,8 +370,8 @@ select:focus {
   overflow-x: auto;
   font-size: 12px;
   color: var(--text-muted);
-  background: var(--surface);
-  border-radius: var(--radius);
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
   padding: 10px 12px;
   text-align: left;
   white-space: pre-wrap;

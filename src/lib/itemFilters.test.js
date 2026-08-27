@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { categoriesInUse, matchesFilter } from './itemFilters'
+import { categoriesInUse, expiryBand, groupByExpiry, matchesFilter } from './itemFilters'
 
 /** Builds an item whose expiry is `offset` days from today. */
 function itemDueIn(offset, extra = {}) {
@@ -87,5 +87,45 @@ describe('categoriesInUse', () => {
     expect(categoriesInUse([{ category_id: null, category: null }])).toEqual([])
     expect(categoriesInUse([])).toEqual([])
     expect(categoriesInUse(null)).toEqual([])
+  })
+})
+
+describe('expiry bands', () => {
+  it('assigns each item to exactly one band', () => {
+    expect(expiryBand(itemDueIn(-1))).toBe('expired')
+    expect(expiryBand(itemDueIn(0))).toBe('today')
+    expect(expiryBand(itemDueIn(1))).toBe('week')
+    expect(expiryBand(itemDueIn(7))).toBe('week')
+    expect(expiryBand(itemDueIn(8))).toBe('later')
+  })
+
+  it('partitions the list -- every item lands in one group, none in two', () => {
+    const items = [itemDueIn(-3), itemDueIn(0), itemDueIn(2), itemDueIn(40)]
+    const groups = groupByExpiry(items)
+    const flattened = groups.flatMap((g) => g.items)
+
+    expect(flattened).toHaveLength(items.length)
+    expect(new Set(flattened).size).toBe(items.length)
+  })
+
+  it('omits empty bands rather than rendering a bare heading', () => {
+    const groups = groupByExpiry([itemDueIn(0)])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].label).toBe('Expiring Today')
+  })
+
+  it('orders bands most urgent first', () => {
+    const groups = groupByExpiry([itemDueIn(40), itemDueIn(-2), itemDueIn(3), itemDueIn(0)])
+    expect(groups.map((g) => g.band)).toEqual(['expired', 'today', 'week', 'later'])
+  })
+
+  it('matches the chips to the bands they name', () => {
+    // A chip and its band must agree, or filtering to "Today" would show a
+    // heading of items the chip itself excludes.
+    for (const offset of [-2, 0, 3, 40]) {
+      const item = itemDueIn(offset)
+      const band = expiryBand(item)
+      expect(matchesFilter(item, band)).toBe(true)
+    }
   })
 })

@@ -1,0 +1,77 @@
+/* Fixed to the viewport, but constrained to the same 520px column as #root so
+   it stays under the app rather than spanning a wide desktop window. */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  z-index: 20;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--nav-h);
+  /* Keeps the tabs clear of the iOS home indicator without adding height on
+     devices that don't have one. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0;
+
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.nav-tab.active {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.nav-tab svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Raised centre action. Sits above the bar's top edge, which is why the nav
+   needs a z-index and the FAB a shadow to read as floating. */
+.nav-fab {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  margin-top: -22px;
+
+  display: grid;
+  place-items: center;
+
+  background: var(--accent);
+  color: #fff;
+  border: 4px solid var(--surface);
+  border-radius: 50%;
+  box-shadow: var(--shadow-float);
+}
+
+.nav-fab:hover {
+  background: var(--accent-dark);
+}
+
+/* Every screen that shows the nav wraps its content in this, so the last row
+   of a list can scroll clear of the bar instead of hiding behind it. */
+.has-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+}

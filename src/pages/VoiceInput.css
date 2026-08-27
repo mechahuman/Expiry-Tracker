@@ -37,7 +37,7 @@
   height: 116px;
   border-radius: 50%;
   font-size: 44px;
-  background: var(--accent-bg);
+  background: var(--accent-tint);
   border: 2px solid var(--accent);
   display: grid;
   place-content: center;
@@ -50,7 +50,7 @@
 
 @keyframes mic-pulse {
   0% {
-    box-shadow: 0 0 0 0 var(--accent-bg);
+    box-shadow: 0 0 0 0 var(--accent-tint);
   }
   70% {
     box-shadow: 0 0 0 22px transparent;
