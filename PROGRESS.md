@@ -366,3 +366,42 @@ This module's core logic is SQL, which Vitest can't reach. Modules 5, 6 and 8 al
 1. Run `supabase/005_rewards.sql` in the SQL Editor. **Nothing in the rewards UI works until this happens** — `sync_rewards()` currently returns `PGRST202`, function not found.
 2. Run `supabase/006_verify_rewards.sql` (replace `<test-uuid>` with a real user id). Every check should read PASS, and **the two tamper statements in STEP 5 must ERROR** — that's the module's whole purpose.
 3. Browser: add an item → Home points rise and a "Badge unlocked" banner appears → tap the points → Rewards screen shows the unlocked badge and progress bars on the rest.
+
+---
+
+## 2026-08-27 — Module 10 (PWA Polish — offline behaviour)
+
+Most of what the roadmap lists under Module 10 was already done in the hardening pass (real icons, maskable variant, `theme_color`, `apple-touch-icon`, correct manifest). What remained was the part that actually needed designing: **what the app honestly does with no connection.**
+
+### A regression we caused, found and fixed
+**The service worker had no navigation fallback.** `index.html` was precached, but nothing mapped a navigation request for `/home` onto it — so a cold start or refresh on any sub-route failed offline *with the entire app shell sitting in cache*.
+
+We introduced this ourselves in Module 8. Switching to `injectManifest` (needed for the push handlers) meant `navigateFallback` stopped applying — it's a `generateSW`-only option — and nothing replaced it. Verified before fixing: `NavigationRoute` appeared **0 times** in the built worker.
+
+**Verifying the fix needs care**, worth recording: grepping for `NavigationRoute` *still* returns 0 afterwards, because the minifier mangles class names. Three checks that do work: `createHandlerBoundToURL` went 1 → 2 (library export plus our call site), the minified `I(new q(W(\`index.html\`),{denylist:[...` fragment is present, and there's a `.mode===\`navigate\`` check. All three confirmed. Push handlers verified still intact afterwards, since they live in the same file.
+
+### Last-synced inventory
+Cached in `localStorage` keyed by user id — deliberately **not** by runtime-caching Supabase's REST responses in Workbox. That looks tidier but is unsafe: the auth token travels in a *header*, not the URL, so a URL-keyed HTTP cache would serve one account's inventory to whoever signs in next on a shared device. Cleared on sign-out.
+
+The cache is only ever written from a *successful* response, so a failed fetch can't poison it, and an entry whose shape doesn't match is treated as absent (cached data outlives deploys). Home falls back to it when a fetch fails, showing "Offline — showing items last synced 3 hours ago", and silently refetches when the connection returns.
+
+### Being honest about what needs a connection
+Voice and Scan are **disabled** offline rather than left to fail — Chrome's speech recognition is server-side and Tesseract fetches its WASM core from a CDN. Manual entry stays reachable, with the form warning up front rather than after you've filled it in; submitting offline refuses with a clear message. Per the decision taken, nothing is queued — an item that silently vanishes is worse than one that plainly refused to save.
+
+While extracting this I noticed the Voice/Scan block was **duplicated** in two places on Home, so the offline handling would have had to be kept in sync across both copies. Pulled it out into one `AddActions` component.
+
+### Post-deploy chunk 404
+Routes are lazy-loaded since the hardening pass, so a tab open across a deploy can request a chunk whose hashed filename no longer exists — and `skipWaiting()` makes that likelier, not rarer. Failed dynamic imports now reload once, guarded by a `sessionStorage` flag so a genuinely broken chunk can't cause a loop.
+
+### One shared-class lesson, third time
+`.offline-banner` started in `Home.css`, then `ItemForm` needed it too. A class defined in one page's stylesheet only works elsewhere by accident of import order — which breaks under code-splitting, which we now have. Moved to `index.css`. Same trap as `.field`/`.form-banner` in Module 3 and `.header-spacer` in Module 5.
+
+74 tests passing, lint and build clean, production build serves all routes.
+
+**I can't verify real offline behaviour** — that needs a browser with the network actually cut.
+
+### Module 10 browser test script
+1. `npm run preview`, open DevTools → Network → **Offline**, then **hard-refresh on `/home`**. The app shell should load with an offline banner instead of the browser's error page. *This is the scenario that failed before this module.*
+2. Still offline: the inventory should show last-synced items with "last synced …"; Voice and Scan greyed out with a reason; Add opens but warns and refuses to save.
+3. Go back online → the stale banner should clear itself without you navigating.
+4. On the phone, installed to the home screen: airplane mode → open the app → same behaviour.

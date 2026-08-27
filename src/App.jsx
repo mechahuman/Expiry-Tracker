@@ -10,14 +10,55 @@ import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Home from './pages/Home'
 
+const RELOAD_FLAG = 'expiry-tracker:chunk-reload'
+
+/**
+ * lazy(), but tolerant of a chunk that has vanished.
+ *
+ * Chunk filenames are content-hashed, so a tab left open across a deploy asks
+ * for a file that no longer exists and the import rejects. The service worker
+ * calling skipWaiting() makes this likelier, not rarer. Reloading picks up the
+ * new build; the sessionStorage flag stops a genuinely broken chunk from
+ * turning that into a reload loop.
+ */
+function lazyRoute(factory) {
+  return lazy(() =>
+    factory()
+      .then((module) => {
+        try {
+          sessionStorage.removeItem(RELOAD_FLAG)
+        } catch {
+          /* Storage unavailable -- the reload guard just won't persist. */
+        }
+        return module
+      })
+      .catch((error) => {
+        let alreadyTried = true
+        try {
+          alreadyTried = sessionStorage.getItem(RELOAD_FLAG) === '1'
+          if (!alreadyTried) sessionStorage.setItem(RELOAD_FLAG, '1')
+        } catch {
+          /* Can't track attempts, so don't risk looping -- fall through. */
+        }
+
+        if (!alreadyTried) {
+          window.location.reload()
+          // Never settles: the reload takes over before React renders again.
+          return new Promise(() => {})
+        }
+        throw error
+      }),
+  )
+}
+
 // Lazy: the capture and entry screens, none of which a user necessarily opens
 // in a session. Splitting them keeps their weight -- and, through them,
 // chrono-node and tesseract.js -- out of the initial download.
-const AddItem = lazy(() => import('./pages/AddItem'))
-const VoiceInput = lazy(() => import('./pages/VoiceInput'))
-const ScanItem = lazy(() => import('./pages/ScanItem'))
-const VerifyItem = lazy(() => import('./pages/VerifyItem'))
-const Rewards = lazy(() => import('./pages/Rewards'))
+const AddItem = lazyRoute(() => import('./pages/AddItem'))
+const VoiceInput = lazyRoute(() => import('./pages/VoiceInput'))
+const ScanItem = lazyRoute(() => import('./pages/ScanItem'))
+const VerifyItem = lazyRoute(() => import('./pages/VerifyItem'))
+const Rewards = lazyRoute(() => import('./pages/Rewards'))
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {

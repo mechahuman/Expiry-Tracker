@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
 import { todayISO } from '../lib/date'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import './ItemForm.css'
 
 const UNITS = ['pcs', 'g', 'kg', 'ml', 'l', 'packs']
@@ -27,6 +28,7 @@ export default function ItemForm({
   onSaved,
 }) {
   const session = useAuthStore((s) => s.session)
+  const online = useOnlineStatus()
   const [categories, setCategories] = useState([])
   const [categoriesError, setCategoriesError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -72,6 +74,15 @@ export default function ItemForm({
   const onSubmit = async (values) => {
     setSubmitError('')
 
+    // Checked before the request rather than after: offline, the Supabase call
+    // fails with a generic network error that tells the user nothing about
+    // why. Saving is deliberately not queued -- an item that silently vanishes
+    // is worse than one that plainly refused to save.
+    if (!online) {
+      setSubmitError('You’re offline — this item can’t be saved until you reconnect.')
+      return
+    }
+
     const { data, error } = await supabase
       .from('inventory_items')
       .insert({
@@ -97,6 +108,14 @@ export default function ItemForm({
 
   return (
     <form className="item-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      {/* Shown up front, not on submit -- filling in a whole form before being
+          told it can't be saved is a poor way to find out. */}
+      {!online && (
+        <p className="form-banner offline-banner">
+          You’re offline. You can fill this in, but it won’t save until you reconnect.
+        </p>
+      )}
+
       <label className="field">
         <span>
           Name

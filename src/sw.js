@@ -7,11 +7,31 @@
  * it has to be hand-written at all.
  */
 import { clientsClaim } from 'workbox-core'
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
 
 // Replaced at build time with the list of files to precache.
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
+
+// Serve the cached app shell for any navigation, so a cold start or refresh on
+// a client-side route works offline.
+//
+// This is doing by hand what `navigateFallback` used to do for us. That option
+// only applies in generateSW mode, and Module 8 had to switch this project to
+// injectManifest to get custom push handlers -- so the fallback silently
+// stopped applying. index.html was still precached, but nothing mapped a
+// request for /home onto it, and refreshing offline failed with the whole
+// shell sitting right there in the cache.
+//
+// The denylist keeps the fallback away from anything that looks like a real
+// file. Without it a missing asset would be answered with index.html, which
+// fails in a far more confusing way than a plain 404.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL('index.html'), {
+    denylist: [/\/[^/?]+\.[^/]+$/],
+  }),
+)
 
 // registerType is 'autoUpdate', so a new worker should activate straight away
 // rather than waiting for every tab to close.

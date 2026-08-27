@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
 import { categoriesInUse, matchesFilter } from '../lib/itemFilters'
 import { describeNewBadges, syncRewards } from '../lib/rewards'
+import { loadItems, saveItems } from '../lib/offlineCache'
+import { describeSyncAge } from '../lib/relativeTime'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import ItemCard from '../components/ItemCard'
 import PushPrompt from '../components/PushPrompt'
 import './Home.css'
@@ -28,6 +31,10 @@ export default function Home() {
   const [flash, setFlash] = useState(location.state?.flash ?? '')
   const [badgeFlash, setBadgeFlash] = useState('')
 
+  const online = useOnlineStatus()
+  // Set only when the list on screen came from cache rather than the network.
+  const [staleSince, setStaleSince] = useState(null)
+
   // Returns a cancel function so callers can ignore a response that lands
   // after the component has gone.
   const fetchItems = useCallback(() => {
@@ -46,10 +53,27 @@ export default function Home() {
       .order('expiry_date', { ascending: true })
       .then(({ data, error }) => {
         if (cancelled) return
-        if (error) setItemsError(error.message)
-        else {
+
+        if (!error) {
           setItemsError('')
+          setStaleSince(null)
           setItems(data ?? [])
+          // Keeps the offline fallback current. Only ever written from a
+          // successful response, so the cache can't be poisoned by a failure.
+          saveItems(session.user.id, data ?? [])
+          return
+        }
+
+        // A failed fetch with no connection isn't really an error to report --
+        // it's the expected outcome, and the cached list is a better answer
+        // than an empty screen. A failure while online is a real error.
+        const cached = loadItems(session.user.id)
+        if (cached) {
+          setItems(cached.items)
+          setStaleSince(cached.savedAt)
+          setItemsError('')
+        } else {
+          setItemsError(error.message)
         }
       })
 
@@ -93,6 +117,13 @@ export default function Home() {
   // back from /add, /voice or /scan -- a freshly saved item is already picked
   // up here and needs no separate refetch.
   useEffect(fetchItems, [fetchItems])
+
+  // Coming back online while showing cached data: refresh silently, so the
+  // stale banner clears itself rather than waiting for the user to navigate.
+  useEffect(() => {
+    if (!online || !staleSince) return undefined
+    return fetchItems()
+  }, [online, staleSince, fetchItems])
 
   // Clear the flash after a few seconds and scrub it from history state, so
   // it doesn't reappear if the user navigates back to /home later.
@@ -148,6 +179,13 @@ export default function Home() {
       {flash && <p className="form-banner notice home-flash">{flash}</p>}
       {badgeFlash && <p className="form-banner notice home-flash badge-flash">{badgeFlash}</p>}
       {itemsError && <p className="form-banner error home-flash">{itemsError}</p>}
+      {!online && (
+        <p className="form-banner home-flash offline-banner">
+          {staleSince
+            ? `Offline — showing items last synced ${describeSyncAge(staleSince)}.`
+            : 'Offline — changes can’t be saved until you reconnect.'}
+        </p>
+      )}
 
       {items === null ? (
         <p className="home-loading">Loading your kitchen…</p>
@@ -158,19 +196,7 @@ export default function Home() {
           </span>
           <h2>Nothing here yet</h2>
           <p>Items you add will show up here with their expiry dates.</p>
-          <div className="add-actions">
-            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
-              Add your first item
-            </button>
-            <div className="add-actions-row">
-              <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
-                🎙️ Voice
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => navigate('/scan')}>
-                📷 Scan
-              </button>
-            </div>
-          </div>
+          <AddActions primaryLabel="Add your first item" online={online} onGo={navigate} />
         </div>
       ) : (
         <>
@@ -225,19 +251,12 @@ export default function Home() {
             </ul>
           )}
 
-          <div className="add-actions fab">
-            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
-              + Add item
-            </button>
-            <div className="add-actions-row">
-              <button type="button" className="btn-secondary" onClick={() => navigate('/voice')}>
-                🎙️ Voice
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => navigate('/scan')}>
-                📷 Scan
-              </button>
-            </div>
-          </div>
+          <AddActions
+            primaryLabel="+ Add item"
+            online={online}
+            onGo={navigate}
+            className="fab"
+          />
         </>
       )}
 
@@ -254,6 +273,46 @@ export default function Home() {
           </button>
         )}
       </footer>
+    </div>
+  )
+}
+
+/**
+ * The three ways in. Extracted because it appears twice -- in the empty state
+ * and above the list -- and the offline handling shouldn't have to be kept in
+ * sync across two copies.
+ *
+ * Voice and Scan are disabled offline rather than left to fail: Chrome's
+ * speech recognition runs server-side and Tesseract fetches its WASM core from
+ * a CDN, so neither can work without a connection. Manual entry stays enabled,
+ * since the form itself explains the situation and it's the one path that
+ * could plausibly work offline later.
+ */
+function AddActions({ primaryLabel, online, onGo, className = '' }) {
+  return (
+    <div className={`add-actions ${className}`.trim()}>
+      <button type="button" className="btn-primary" onClick={() => onGo('/add')}>
+        {primaryLabel}
+      </button>
+      <div className="add-actions-row">
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => onGo('/voice')}
+          disabled={!online}
+        >
+          🎙️ Voice
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => onGo('/scan')}
+          disabled={!online}
+        >
+          📷 Scan
+        </button>
+      </div>
+      {!online && <p className="capture-offline-note">Voice and Scan need a connection.</p>}
     </div>
   )
 }

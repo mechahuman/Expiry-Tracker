@@ -2,11 +2,21 @@
   "project": "Packaged Food Inventory & Expiry Tracker (PWA)",
   "plan_file": "C:\\Users\\manav\\.claude\\plans\\development-roadmap-atomic-fountain.md",
   "build_order": [
-    "0 Setup", "1 DB Schema", "2 Auth & Onboarding", "3 Manual Entry",
-    "4 Inventory List", "5 Voice Input", "6 OCR Scanning", "7 Verify Screen",
-    "8 Notifications", "9 Rewards", "10 PWA Polish", "11 E2E Testing", "12 Future stub"
+    "0 Setup",
+    "1 DB Schema",
+    "2 Auth & Onboarding",
+    "3 Manual Entry",
+    "4 Inventory List",
+    "5 Voice Input",
+    "6 OCR Scanning",
+    "7 Verify Screen",
+    "8 Notifications",
+    "9 Rewards",
+    "10 PWA Polish",
+    "11 E2E Testing",
+    "12 Future stub"
   ],
-  "current_module": "9 Rewards / Badges (code complete, awaiting user to run 005_rewards.sql)",
+  "current_module": "11 End-to-End Testing",
   "workflow_agreements": [
     "Pause after each module's Done-when checklist for manual review/testing before starting the next module",
     "Lazy-load heavy WASM deps (OpenCV.js, vosk-browser, Tesseract.js) via dynamic import from Module 0 onward",
@@ -14,11 +24,19 @@
     "Update this file (and PROGRESS.md) after every meaningful change, not just at module end"
   ],
   "model_guide": {
-    "0": "Sonnet 5", "1": "Opus 4.8", "2": "Sonnet 5", "3": "Sonnet 5",
-    "4": "Sonnet 5", "5": "Opus 4.8", "6": "Opus 4.8", "7": "Sonnet 5",
-    "8": "Opus 4.8", "9": "Opus 4.8 (engine design) then Sonnet 5 (badge entries)",
+    "0": "Sonnet 5",
+    "1": "Opus 4.8",
+    "2": "Sonnet 5",
+    "3": "Sonnet 5",
+    "4": "Sonnet 5",
+    "5": "Opus 4.8",
+    "6": "Opus 4.8",
+    "7": "Sonnet 5",
+    "8": "Opus 4.8",
+    "9": "Opus 4.8 (engine design) then Sonnet 5 (badge entries)",
     "10": "Opus 4.8 (cache strategy) then Sonnet 5 (manifest/icons)",
-    "11": "Sonnet 5", "12": "Sonnet 5"
+    "11": "Sonnet 5",
+    "12": "Sonnet 5"
   },
   "modules": {
     "0": {
@@ -441,6 +459,50 @@
         "VERIFIED END-TO-END 2026-08-25 over the live REST API, which made the 006 script unnecessary. Four results, all as designed: (1) sync_rewards() returns HTTP 200 with the right shape; (2) PATCH /rest/v1/profiles setting points now returns 403, where the identical request returned 200 and wrote 999999 before 005 -- the hole is measurably closed; (3) the tampered 999999 recomputed itself to the correct value, proving the recompute-not-increment property; (4) one item added and used in time gave exactly 15 points (5 + 10) and unlocked First Item Added, and an immediate second call returned newly_earned: [] with points unchanged -- idempotent, no double-award. All 6 badges confirmed seeded. Test rows cleaned up.",
         "The user hit `42501 permission denied for table profiles` when running 006 and read it as a failure -- it was the tamper test PASSING. Worth noting Postgres emits a HINT suggesting `GRANT UPDATE ON public.profiles TO authenticated`, which would reopen the exact hole this module closes. Do not follow that hint.",
         "TESTABILITY REGRESSION, stated plainly: this module's core logic is SQL, which Vitest cannot reach. That's a genuine step down from Modules 5/6/8 where tests caught real bugs before the user saw them. Mitigated by 006_verify_rewards.sql (manual) and by extracting the progress maths into a unit-tested JS helper -- but the awarding logic itself is only covered by a script someone has to remember to run."
+      ]
+    },
+    "10": {
+      "name": "PWA Polish (offline behaviour)",
+      "status": "done",
+      "started": "2026-08-27",
+      "completed": "2026-08-27",
+      "decisions": {
+        "offline_writes_fail_cleanly": "User chose a clear refusal over queueing. Matches the roadmap, which only asks that offline shows last-synced data rather than a blank screen. An item that silently vanishes from a queue is worse than one that plainly refused to save.",
+        "client_side_cache_not_workbox_runtime_caching": "Inventory is cached in localStorage keyed by user id, NOT by runtime-caching Supabase REST responses in Workbox. The auth token travels in a header, not the URL, so a URL-keyed HTTP cache would serve one account's inventory to whoever signs in next on a shared device. Cleared on sign-out.",
+        "module_8_verification_deferred": "User chose to leave the unconfirmed notification chain to Module 11's end-to-end pass."
+      },
+      "tasks": {
+        "navigation_fallback": "done -- THE headline fix",
+        "offline_inventory_cache": "done",
+        "offline_banner_with_sync_age": "done",
+        "voice_scan_disabled_offline": "done",
+        "itemform_offline_guard": "done",
+        "post_deploy_chunk_reload": "done",
+        "cache_cleared_on_signout": "done",
+        "lint_test_build_pass": "done (74 tests)",
+        "browser_offline_test_by_user": "pending_user"
+      },
+      "files_added": [
+        "src/lib/offlineCache.js + .test.js -- save/load/clear last-synced items, injectable storage so it's testable, guarded against Safari private mode",
+        "src/lib/relativeTime.js + .test.js -- describeSyncAge() for the offline banner",
+        "src/hooks/useOnlineStatus.js -- navigator.onLine + online/offline events"
+      ],
+      "files_changed": [
+        "src/sw.js -- registered NavigationRoute(createHandlerBoundToURL('index.html')) with a denylist for asset-looking paths",
+        "src/pages/Home.jsx + .css -- falls back to cached items when a fetch fails, offline banner with sync age, refetches on reconnect, extracted AddActions component (was duplicated in two places) which disables Voice/Scan offline",
+        "src/components/ItemForm.jsx -- offline warning shown up front and submit refused with a clear message",
+        "src/index.css -- .offline-banner moved here from Home.css (ItemForm needs it too; a page-local class only works elsewhere by import-order accident, which breaks under code-splitting -- third time this pattern has bitten, after .field/.form-banner in Module 3 and .header-spacer in Module 5)",
+        "src/store/authStore.js -- signOut clears every cached inventory",
+        "src/App.jsx -- lazyRoute() wrapper reloads once on a failed chunk import, guarded by sessionStorage against loops",
+        "package.json -- devDep workbox-routing"
+      ],
+      "notes": [
+        "REGRESSION FOUND AND FIXED, introduced by us in Module 8: switching vite-plugin-pwa to injectManifest (needed for push handlers) silently dropped the SPA navigation fallback, because navigateFallback is a generateSW-only option. index.html stayed precached but nothing mapped a navigation request for /home onto it, so a cold start or refresh on any sub-route failed offline with the entire app shell sitting in cache. Verified before the fix: NavigationRoute count 0 in dist/sw.js.",
+        "VERIFYING THE FIX NEEDS CARE: grepping dist/sw.js for 'NavigationRoute' STILL returns 0 after the fix, because the minifier mangles class names. Confirm instead by (a) createHandlerBoundToURL going 1 -> 2 (library export plus our call site), and (b) the minified `I(new q(W(`index.html`),{denylist:[...` fragment, and (c) a `.mode===`navigate`` check being present. All three confirmed.",
+        "Push handlers verified still intact after editing sw.js -- showNotification, notificationclick and the expiry-reminder tag all still present, and both listeners still registered.",
+        "navigator.onLine only reports whether a network interface is up -- a phone on wifi with no internet behind it still reads as online. So false means definitely offline, true means only probably online, and requests still need their own error handling. Documented in the hook.",
+        "The cached list is only ever written from a SUCCESSFUL response, so a failed fetch can't poison it. A cache entry whose shape doesn't match is treated as absent, since cached data outlives deploys.",
+        "CANNOT SELF-VERIFY: real offline behaviour needs a browser with the network cut. Verified the built worker's contents and that the production build serves all routes; the actual offline cold-start needs DevTools offline mode or airplane mode on the phone."
       ]
     }
   },

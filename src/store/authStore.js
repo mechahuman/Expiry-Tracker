@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient'
+import { clearAllItems } from '../lib/offlineCache'
 
 const ONBOARDED_KEY = 'expiry-tracker:onboarded'
 
@@ -43,5 +44,11 @@ export const useAuthStore = create((set) => ({
 
   // Session state is cleared by the onAuthStateChange listener in App.jsx,
   // which fires SIGNED_OUT -- no need to set it here as well.
-  signOut: () => supabase.auth.signOut(),
+  signOut: () => {
+    // Drop every cached inventory first. The whole point of signing out on a
+    // shared device is that the next person sees nothing of the last, and the
+    // offline cache would otherwise still be sitting in localStorage.
+    clearAllItems()
+    return supabase.auth.signOut()
+  },
 }))

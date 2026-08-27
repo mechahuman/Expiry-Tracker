@@ -184,6 +184,14 @@ select:focus {
   background: var(--accent-bg);
 }
 
+/* Shared rather than page-local: Home and ItemForm both use it, and a class
+   defined in one page's stylesheet only works elsewhere by accident of import
+   order -- which breaks the moment routes are code-split, as they now are. */
+.offline-banner {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
 /* Balances a leading "Cancel" button's width so a centered page title in a
    space-between header stays visually centered. Used by Add/Voice/Verify. */
 .header-spacer {
