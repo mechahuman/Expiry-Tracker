@@ -7,7 +7,6 @@ import { itemEmoji, mostUrgent, summarise } from '../lib/dashboardStats'
 import { describeNewBadges, syncRewards } from '../lib/rewards'
 import { describeSyncAge } from '../lib/relativeTime'
 import { daysUntil } from '../lib/date'
-import AddActions from '../components/AddActions'
 import BottomNav from '../components/BottomNav'
 import PushPrompt from '../components/PushPrompt'
 import './Home.css'
@@ -144,7 +143,9 @@ export default function Home() {
             </span>
             <h2>Nothing here yet</h2>
             <p>Items you add will show up here with their expiry dates.</p>
-            <AddActions primaryLabel="Add your first item" online={online} />
+            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+              Add Food
+            </button>
           </div>
         ) : (
           <>

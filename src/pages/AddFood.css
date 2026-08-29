@@ -1,0 +1,88 @@
+.add-food {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-food-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px 0;
+}
+
+.option-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 18px 16px;
+  text-align: left;
+
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.option-card:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.option-emoji {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+}
+
+/* The card's hover tint would make a matching circle disappear into it. */
+.option-card:hover:not(:disabled) .option-emoji {
+  background: #fff;
+}
+
+.option-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.option-body {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.option-chevron {
+  flex-shrink: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+/* Moved here from AddActions.css, which this screen replaces. */
+.capture-offline-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}

@@ -63,8 +63,15 @@
   box-shadow: var(--shadow-float);
 }
 
-.nav-fab:hover {
+.nav-fab:hover,
+.nav-fab.active {
   background: var(--accent-dark);
+}
+
+/* Ring rather than a colour swap: the FAB is already the only green circle on
+   the bar, so a darker green alone reads as a hover, not as "you are here". */
+.nav-fab.active {
+  box-shadow: var(--shadow-float), 0 0 0 3px var(--accent-ring);
 }
 
 /* Every screen that shows the nav wraps its content in this, so the last row

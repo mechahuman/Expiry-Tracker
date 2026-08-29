@@ -484,3 +484,45 @@ Cream page + white cards is the signature pairing. A white page loses it.
 Notification Settings · Item Detail · Permissions · Splash screens; migration
 007 for `location` + `notes`; multi-item receipt OCR (a feature rebuild, not a
 restyle); per-item suggested actions on Alerts.
+
+### Follow-up — Add Food chooser (2026-08-29)
+
+**Bug reported by the user:** tapping the nav's **+** went straight to the
+manual form, with no Voice or Scan option.
+
+**Cause, and it was worse than it looked.** The rebuild wired the FAB directly
+to `/add`. The three capture options survived only inside `AddActions`, which
+renders in the Home and My Food *empty states* — so the moment a user had any
+items at all, **Voice and Scan were unreachable from anywhere in the app.**
+
+**Fix:** built the screen the design already specifies
+(`design/figma/add-food-entry.html`) — an "Add Food" chooser with three cards,
+copy taken verbatim from the frame.
+
+The routing split was mandatory rather than cosmetic:
+
+| Path | Screen |
+|---|---|
+| `/add` | AddFood chooser (new) |
+| `/add/manual` | AddItem, the form |
+
+`ScanItem` and `VoiceInput` each have two **"Type it instead"** buttons that
+pointed at `/add`. Had `/add` simply become the chooser, all four would have
+looped the user straight back into the chooser they came from — destroying the
+only escape route out of a failed scan. Guarded by a grep in the verification
+step.
+
+`AddActions` was deleted. Empty states now show a single "Add Food" button, per
+the design's own empty frames — which means the Voice/Scan offline rules now
+live in one component instead of two that had to stay in step.
+
+Deliberately unchanged: `VerifyItem`'s `retryPath` fallback of `/add`. Its
+button reads "Discard and try again", so the chooser is the *better* landing.
+
+**Verified:** 88 tests, lint and build clean, all 8 routes 200 from preview —
+including `/add/manual`, worth checking because Module 10's navigation-fallback
+denylist regex could have mishandled a nested path.
+
+**Browser check:** tap **+** → three cards. From Scan and Voice, "Type it
+instead" must land on the *form*, not back on the chooser. Offline, Scan and
+Voice are disabled with a reason and Manual still works.

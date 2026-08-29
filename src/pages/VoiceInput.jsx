@@ -58,7 +58,7 @@ export default function VoiceInput() {
             Voice input isn’t supported in this browser. Chrome or Safari support it — or you can
             add the item by typing instead.
           </p>
-          <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+          <button type="button" className="btn-primary" onClick={() => navigate('/add/manual')}>
             Type it instead
           </button>
         </div>
@@ -89,7 +89,7 @@ export default function VoiceInput() {
           {transcript && <p className="voice-transcript">{transcript}</p>}
           {error && <p className="form-banner error">{error}</p>}
 
-          <button type="button" className="btn-text" onClick={() => navigate('/add')}>
+          <button type="button" className="btn-text" onClick={() => navigate('/add/manual')}>
             Type it instead
           </button>
         </div>

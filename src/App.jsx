@@ -56,6 +56,7 @@ function lazyRoute(factory) {
 // chrono-node and tesseract.js -- out of the initial download.
 const MyFood = lazyRoute(() => import('./pages/MyFood'))
 const Alerts = lazyRoute(() => import('./pages/Alerts'))
+const AddFood = lazyRoute(() => import('./pages/AddFood'))
 const AddItem = lazyRoute(() => import('./pages/AddItem'))
 const VoiceInput = lazyRoute(() => import('./pages/VoiceInput'))
 const ScanItem = lazyRoute(() => import('./pages/ScanItem'))
@@ -121,8 +122,20 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* /add is the chooser; the manual form lives beneath it. Several
+              screens link to /add/manual as their "type it instead" escape
+              hatch, so the two must stay distinct -- pointing those at /add
+              would loop the user back to the chooser they came from. */}
           <Route
             path="/add"
+            element={
+              <ProtectedRoute>
+                <AddFood />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add/manual"
             element={
               <ProtectedRoute>
                 <AddItem />

@@ -133,7 +133,7 @@ export default function ScanItem() {
       {status === 'error' ? (
         <div className="scan-body">
           <p className="form-banner error">{error}</p>
-          <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+          <button type="button" className="btn-primary" onClick={() => navigate('/add/manual')}>
             Type it instead
           </button>
         </div>
@@ -165,7 +165,7 @@ export default function ScanItem() {
             >
               {status === 'working' ? 'Reading…' : 'Capture'}
             </button>
-            <button type="button" className="btn-text" onClick={() => navigate('/add')}>
+            <button type="button" className="btn-text" onClick={() => navigate('/add/manual')}>
               Type it instead
             </button>
           </div>

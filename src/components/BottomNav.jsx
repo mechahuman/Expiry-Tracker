@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import './BottomNav.css'
 
 /**
@@ -12,6 +12,11 @@ import './BottomNav.css'
  */
 export default function BottomNav() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // The FAB isn't a NavLink, so it doesn't get an active class for free.
+  // startsWith rather than equality keeps it lit on /add/manual too.
+  const addActive = pathname.startsWith('/add')
 
   return (
     <nav className="bottom-nav" aria-label="Main">
@@ -20,9 +25,10 @@ export default function BottomNav() {
 
       <button
         type="button"
-        className="nav-fab"
+        className={`nav-fab${addActive ? ' active' : ''}`}
         onClick={() => navigate('/add')}
         aria-label="Add food"
+        aria-current={addActive ? 'page' : undefined}
       >
         <IconPlus />
       </button>

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useInventory } from '../hooks/useInventory'
 import { groupByExpiry, matchesFilter } from '../lib/itemFilters'
 import { describeSyncAge } from '../lib/relativeTime'
 import { syncRewards } from '../lib/rewards'
-import AddActions from '../components/AddActions'
 import BottomNav from '../components/BottomNav'
 import ItemCard from '../components/ItemCard'
 import './MyFood.css'
@@ -17,6 +17,7 @@ const CHIPS = [
 ]
 
 export default function MyFood() {
+  const navigate = useNavigate()
   const { items, error, staleSince, online, markUsed } = useInventory()
 
   const [search, setSearch] = useState('')
@@ -74,7 +75,9 @@ export default function MyFood() {
             </span>
             <h2>Nothing here yet</h2>
             <p>Items you add will show up here with their expiry dates.</p>
-            <AddActions primaryLabel="Add your first item" online={online} />
+            <button type="button" className="btn-primary" onClick={() => navigate('/add')}>
+              Add Food
+            </button>
           </div>
         ) : (
           <>

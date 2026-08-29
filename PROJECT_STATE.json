@@ -573,7 +573,19 @@
         "migration 007 for inventory_items.location and .notes (item detail shows both)",
         "multi-item receipt OCR (design extracts several items from a receipt; ours reads one expiry date off a package -- a feature rebuild, not a restyle)",
         "per-item suggested actions on Alerts"
-      ]
+      ],
+      "followups_resolved": {
+        "add_food_chooser_2026_08_29": {
+          "problem": "The bottom-nav + went straight to the manual form. The three capture options lived only in AddActions, which rendered in the Home/MyFood EMPTY states -- so once a user had any items, Voice and Scan were unreachable from anywhere in the app. A regression introduced by the UI rebuild, reported by the user with a screenshot.",
+          "fix": "Built the chooser the design already specified (design/figma/add-food-entry.html): src/pages/AddFood.jsx + .css, three cards -- Scan Receipt / Voice Input / Manual Entry, copy verbatim from the frame.",
+          "routing": "/add is now the chooser; the manual form moved to /add/manual. This split was mandatory, not cosmetic: ScanItem and VoiceInput each have two 'Type it instead' buttons that pointed at /add, and leaving them there would have looped the user back into the chooser they came from -- destroying the only escape route from a failed scan.",
+          "addactions_deleted": "src/components/AddActions.jsx + .css removed. Empty states now show a single 'Add Food' button per the design (my-food-empty, progress-empty), so the Voice/Scan offline-disabling rules live in ONE component instead of two that had to stay in step.",
+          "fab_active_state": "BottomNav FAB now lights on /add via useLocation().startsWith('/add') -- startsWith so it stays lit on /add/manual. It is a button not a NavLink, so it gets no active class for free.",
+          "verifyitem_left_alone": "VerifyItem's retryPath fallback of '/add' was deliberately NOT changed: its button reads 'Discard and try again', so landing on the chooser is more correct than landing on the form.",
+          "verification": "88 tests still passing, lint clean, build clean (precache 41, +2 for the new chunk). All 8 routes 200 from preview including /add/manual -- worth checking, since Module 10's navigation-fallback denylist regex could have mishandled a nested path.",
+          "user_visual_check": "PENDING"
+        }
+      }
     }
   },
   "hardening_pass_2026_08_20": {
@@ -627,5 +639,5 @@
     "Reconsider vosk-browser offline voice fallback (deferred in Module 5) if Firefox support or true offline voice is wanted.",
     "Module 10 (PWA offline) must account for this: OCR needs network + a reachable jsdelivr CDN, and voice needs network (Chrome speech recognition is server-side). Only manual entry works fully offline. Set expectations in the offline UI accordingly."
   ],
-  "last_updated": "2026-08-27"
+  "last_updated": "2026-08-29"
 }

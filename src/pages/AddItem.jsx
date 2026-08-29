@@ -15,7 +15,10 @@ export default function AddItem() {
   return (
     <div className="add-item">
       <header className="add-item-header">
-        <button type="button" className="btn-text" onClick={() => navigate('/home')}>
+        {/* Back to the chooser rather than Home: this screen is reached
+            through it, and from "type it instead" on Voice and Scan, so the
+            chooser is the sensible step back from all three. */}
+        <button type="button" className="btn-text" onClick={() => navigate('/add')}>
           Cancel
         </button>
         <h2>Add item</h2>
