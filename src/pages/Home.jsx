@@ -8,6 +8,7 @@ import { describeNewBadges, syncRewards } from '../lib/rewards'
 import { describeSyncAge } from '../lib/relativeTime'
 import { daysUntil } from '../lib/date'
 import BottomNav from '../components/BottomNav'
+import Logo from '../components/Logo'
 import PushPrompt from '../components/PushPrompt'
 import './Home.css'
 
@@ -106,10 +107,9 @@ export default function Home() {
   return (
     <div className="home has-nav">
       <header className="brand-header">
-        <div className="brand-mark">
-          <h1 className="brand-name">ClearEat</h1>
-          <p className="brand-tagline">See it all. Eat it first.</p>
-        </div>
+        <h1 className="brand-mark">
+          <Logo tone="light" showTagline />
+        </h1>
         {/* The design has no settings or profile screen, so sign-out lives
             here -- the alternative is no way out of the account at all. */}
         <button type="button" className="sign-out" onClick={signOut}>

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
+import Logo from '../components/Logo'
 import './Login.css'
 
 export default function Login() {
@@ -50,8 +51,7 @@ export default function Login() {
   return (
     <div className="login">
       <header className="login-header">
-        <p className="login-brand">ClearEat</p>
-        <p className="login-tagline">See it all. Eat it first.</p>
+        <Logo tone="dark" showTagline className="login-logo" />
         <h1>{isSignup ? 'Create your account' : 'Welcome back'}</h1>
         <p>
           {isSignup

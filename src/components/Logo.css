@@ -1,0 +1,70 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  /* Everything below sizes from this, so a caller only has to set font-size
+     to scale the whole lockup. */
+  font-size: 22px;
+}
+
+/* Structural green of the mark rides on `color`, so the tone classes below set
+   one property and both the mark and the "Clear" half follow. */
+.logo-dark {
+  color: var(--brand);
+  --logo-leaf: var(--accent);
+  --logo-leaf-rib: var(--accent-dark);
+  --logo-produce: var(--accent-light);
+  --logo-word-b: var(--accent);
+}
+
+/* On the brand-green bar. --accent goes muddy against it, so the leaf and the
+   "Eat" half step up to the pale green from the brand board. */
+.logo-light {
+  color: #fff;
+  --logo-leaf: var(--accent-light);
+  --logo-leaf-rib: var(--accent);
+  --logo-produce: #fff;
+  --logo-word-b: var(--accent-light);
+}
+
+.logo-mark {
+  width: 1.55em;
+  height: 1.55em;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.logo-word {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.05;
+}
+
+.logo-word-a {
+  color: currentColor;
+}
+
+.logo-word-b {
+  color: var(--logo-word-b);
+}
+
+.logo-tagline {
+  font-size: 0.32em;
+  font-weight: 600;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  margin-top: 3px;
+  /* Deliberately not currentColor: at this size full-strength brand green is
+     heavy, and on the green bar pure white would compete with the wordmark. */
+  opacity: 0.75;
+}
+
+.logo-tagline-em {
+  color: var(--logo-word-b);
+  opacity: 1;
+}

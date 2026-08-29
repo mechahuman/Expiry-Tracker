@@ -594,6 +594,20 @@
           "scaffold_cleanup": "src/assets/hero.png, react.svg, vite.svg deleted -- all three confirmed unreferenced across src/, index.html and vite.config.js.",
           "still_blocked_on_user": "Phases C (app icons) and D (in-app logo) need source files from the user: a square mark >=512px or SVG, the full lockup, and a light variant for the green Home bar (the logo is two-tone, so one file cannot serve both cream and green backgrounds).",
           "design_note": "The 'waste less' illustration is off-palette -- blue rather than cream/green, with baked-in 'ECO-FRIENDLY CONSERVATION' text that cannot be restyled or translated. Used as designed; flagged to the user."
+        },
+        "brand_logo_icons_2026_08_29": {
+          "source": "User supplied a brand board image. It is a FLATTENED RASTER COMPOSITE, unusable as an asset source: the mark within it is ~150px on cream with no transparency. Its type specimen reads ABCDEFGHIKLJKMMOPPGOTTUVWXYZ (letters duplicated and missing) and mockup text is garbled, indicating AI generation and therefore no vector source.",
+          "palette_cross_validated": "The board's stated hexes match the values independently extracted from the Figma export EXACTLY: #1E5E3C, #4CAF6D, #FF9A3C, #E74C3C, #FFF7EC. Two independent sources agreeing is strong verification. #A8D67A was the one board colour with no token; added as --accent-light.",
+          "decision_hand_authored_svg": "User chose to have the mark hand-authored as SVG rather than cropped/upscaled from the board. src/assets/logo-mark.svg: open ring with a gap, leaf in the gap, fridge with two compartments and contents, orange clock hands.",
+          "decision_keep_poppins": "The board specifies 'Poppins Rounded', which is not a real Google font and is absent from the Figma frames' own font-family declarations. Kept regular Poppins, already self-hosted and precached.",
+          "wordmark_is_live_text": "Central design decision: only the pictorial mark is SVG. 'ClearEat' renders as Poppins text, so it stays crisp at any size, selectable, translatable and screen-reader friendly, with no font embedded in an SVG.",
+          "two_marks_by_legibility": "Verified by rendering: the detailed mark is illegible at 32px. public/favicon.svg uses the board's simplified 'C and leaf' alternative with heavier strokes for 16-32px; the detailed mark drives the app icons at 180px and up.",
+          "inline_svg_not_img": "Logo.jsx inlines the SVG because an <img> cannot inherit currentColor or read CSS custom properties, and colour is exactly what changes between tones. Mark is aria-hidden since the adjacent wordmark already spells the name.",
+          "two_tones": "logo-dark on cream (brand green + accent); logo-light on the brand-green bar (white + --accent-light, since --accent goes muddy on green). Both rendered and visually confirmed legible before commit.",
+          "icons_script": "scripts/generate-icons.mjs committed and repeatable, replacing last time's throwaway. Emits 192/512/180 at 92% and maskable-512 at 80% inset on cream. Icons are full-bleed with NO pre-rounded corners: iOS and Android apply their own mask, and a baked-in radius leaves dark wedges outside theirs.",
+          "gotcha_xml_comments": "XML comments cannot contain a double hyphen, which broke sharp's SVG parse. The house comment style uses ' -- ' freely; inside .svg files it must not.",
+          "verification": "88 tests, lint clean, build clean. All 4 icons plus favicon.svg confirmed present in dist/sw.js precache. Mark rendered and visually inspected at 512/192/32; favicon at 64/32/16; both tones against their real backgrounds.",
+          "user_visual_check": "PENDING -- browser and installed-PWA icon check."
         }
       }
     }

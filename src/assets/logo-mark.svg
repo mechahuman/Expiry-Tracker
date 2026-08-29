@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ClearEat">
+  <!-- Open ring. The gap at the top-right is where the leaf sits, so the two
+       read as one shape rather than a leaf pasted onto a circle. Drawn as an
+       arc rather than a <circle>, which cannot be left open. currentColor so
+       one file serves both the dark and light tones. -->
+  <path d="M46.6 12.6a25 25 0 1 1-11-5.9"
+        fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Leaf filling the ring's gap: a pointed almond angled up-right, formed by
+       two mirrored arcs meeting at a tip. -->
+  <path d="M41.6 10.2c2.6-5 8.2-7.6 14.4-6.8.8 6.2-2 11.6-7.2 13.6-4.8 1.8-9.4-1.6-7.2-6.8Z"
+        fill="#4caf6d"/>
+  <!-- Midrib, a shade darker so the leaf reads as a leaf and not a blob. -->
+  <path d="M44.2 15.4c2.6-4.4 6.4-8 11-10.4"
+        fill="none" stroke="#3d9459" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- Fridge body. Sits left of centre to leave the right-hand channel clear
+       for the clock hands. -->
+  <rect x="19" y="18" width="19" height="28.5" rx="4.5"
+        fill="none" stroke="currentColor" stroke-width="3"/>
+  <!-- Compartment divider -->
+  <path d="M19 28h19" stroke="currentColor" stroke-width="2.4"/>
+  <!-- Door handle, on the hinge-opposite side. Small, but it is the cue that
+       makes the rectangle read as a fridge rather than a cupboard. -->
+  <path d="M34.6 22.6v3M34.6 30.8v3.2"
+        stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+
+  <!-- Upper shelf: a bottle and a bowl -->
+  <rect x="22.2" y="21.2" width="3" height="5" rx="1.5" fill="#4caf6d"/>
+  <path d="M27.4 26.2a2.8 2.8 0 0 1 5.6 0Z" fill="#a8d67a"/>
+
+  <!-- Lower shelf: greens and a tomato -->
+  <path d="M22.2 43.4a3.6 3.6 0 0 1 6.6 0Z" fill="#4caf6d"/>
+  <circle cx="32.4" cy="41.4" r="2.2" fill="#e74c3c"/>
+  <path d="M23 36.4h5" stroke="#a8d67a" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Clock hands: the "expiry" half of the idea. The pivot sits clear of the
+       fridge, in the channel between it and the ring; overlapping the door it
+       merged with the handle and read as clutter. Two hands, not one, so it
+       reads as a clock rather than an arrow. -->
+  <circle cx="44" cy="32" r="1.7" fill="#ff9a3c"/>
+  <path d="M44 32v-7" stroke="#ff9a3c" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M44 32 50.4 38.4" stroke="#ff9a3c" stroke-width="2.8" stroke-linecap="round"/>
+</svg>

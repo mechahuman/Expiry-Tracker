@@ -556,3 +556,49 @@ Also deleted `src/assets/hero.png`, `react.svg`, `vite.svg` — Vite scaffold
 leftovers, all confirmed unreferenced.
 
 **Still blocked on source files** for phases C (icons) and D (in-app logo).
+
+### Brand: logo, favicon and app icons (2026-08-29)
+
+The user supplied a brand board. It is a **flattened raster composite**, so it
+cannot serve as an asset source — the mark inside it is ~150px on cream with no
+transparency. Its type specimen also reads `ABCDEFGHIKLJKMMOPPGOTTUVWXYZ`, with
+letters duplicated and missing, and some mockup text is garbled: signs of AI
+generation, and therefore that no vector source exists.
+
+**What it did confirm.** Its stated palette matches the values independently
+extracted from the Figma export *exactly* — `#1E5E3C`, `#4CAF6D`, `#FF9A3C`,
+`#E74C3C`, `#FFF7EC`. Two independent sources agreeing is strong verification.
+`#A8D67A` was the one board colour with no token; it is now `--accent-light`.
+
+**Decisions:** hand-author the mark as SVG; keep regular Poppins (the board's
+"Poppins Rounded" is not a real Google font, and the Figma frames specify plain
+Poppins).
+
+**Only the mark is artwork.** "ClearEat" stays live Poppins text — crisp at any
+size, selectable, translatable, screen-reader friendly, and no font embedded in
+an SVG. `Logo.jsx` inlines the mark rather than using `<img>`, because an `<img>`
+cannot inherit `currentColor` or read CSS custom properties, and colour is
+exactly what changes between tones.
+
+**Two marks, decided by rendering rather than guessing.** The detailed mark is
+illegible at 32px — confirmed by looking at it. So `favicon.svg` uses the board's
+simplified "C and leaf" alternative with heavier strokes for 16–32px, and the
+detailed mark drives the app icons at 180px and up.
+
+**Icons are full-bleed with no pre-rounded corners.** iOS and Android apply their
+own mask; a baked-in radius leaves dark wedges outside theirs. The maskable
+variant insets to 80% for the adaptive-icon safe zone.
+
+`scripts/generate-icons.mjs` is committed and repeatable, replacing the
+throwaway script used last time.
+
+**Gotcha:** XML comments cannot contain a double hyphen, which broke sharp's SVG
+parse. The comment style used throughout this project uses ` -- ` freely; inside
+`.svg` files it must not.
+
+**Verified:** 88 tests, lint and build clean, all four icons plus `favicon.svg`
+present in the `dist/sw.js` precache. Mark inspected at 512/192/32, favicon at
+64/32/16, and both tones rendered against their real backgrounds.
+
+**Still to check on device:** reinstall the PWA and confirm the home-screen icon
+is the new mark and is not cropped.

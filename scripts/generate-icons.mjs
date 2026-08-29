@@ -1,72 +1,48 @@
 /**
- * Generates every app icon from one glyph definition.
+ * Regenerates every PNG app icon from src/assets/logo-mark.svg.
+ *
+ * Committed rather than run ad hoc so the icons can be rebuilt when the mark
+ * changes, without anyone having to remember the sizes, the colour
+ * substitution, or the maskable safe zone.
  *
  *   node scripts/generate-icons.mjs
- *
- * Module 0 shipped solid-teal placeholders written by a hand-rolled PNG
- * encoder, because no image tooling was available at the time. This replaces
- * that: edit GLYPH below (or swap in real artwork) and re-run.
  */
-import { writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
 import sharp from 'sharp'
+import { readFileSync } from 'node:fs'
 
-const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
+const BRAND = '#1e5e3c'
+const CREAM = '#fff7ec'
 
-const TEAL = '#0f9d8a'
-const WHITE = '#ffffff'
+// currentColor has no meaning outside a document, so bake the brand green in.
+const markSvg = readFileSync('src/assets/logo-mark.svg', 'utf8').replaceAll('currentColor', BRAND)
 
-// A carton with a clock: packaged food, and time running out. Designed on a
-// 512 grid with heavy strokes so it survives being scaled down to a 16px
-// browser tab.
-const GLYPH = `
-  <path d="M140 196h232v180a24 24 0 0 1-24 24H164a24 24 0 0 1-24-24V196Z"
-        fill="none" stroke="${WHITE}" stroke-width="26" stroke-linejoin="round"/>
-  <path d="M140 196l52-72h128l52 72"
-        fill="none" stroke="${WHITE}" stroke-width="26"
-        stroke-linejoin="round" stroke-linecap="round"/>
-  <circle cx="352" cy="352" r="92" fill="${TEAL}"/>
-  <circle cx="352" cy="352" r="72" fill="${WHITE}"/>
-  <path d="M352 306v50l34 24"
-        fill="none" stroke="${TEAL}" stroke-width="24"
-        stroke-linecap="round" stroke-linejoin="round"/>
-`
+/** The mark, centred on a full-bleed cream square at `scale` of the canvas. */
+async function render(size, scale, out) {
+  const inner = Math.round(size * scale)
+  const art = await sharp(Buffer.from(markSvg), { density: 900 })
+    .resize(inner, inner)
+    .png()
+    .toBuffer()
 
-/** Rounded-square icon, as used for the favicon and the PWA manifest. */
-const standardSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Expiry Tracker">
-  <rect width="512" height="512" rx="112" fill="${TEAL}"/>
-${GLYPH}</svg>
-`
+  const pad = Math.round((size - inner) / 2)
+  await sharp({
+    create: { width: size, height: size, channels: 4, background: CREAM },
+  })
+    .composite([{ input: art, top: pad, left: pad }])
+    .png()
+    .toFile(out)
 
-/**
- * Maskable variant: Android crops adaptive icons to a device-chosen shape
- * (circle, squircle, teardrop) and only the middle ~80% is guaranteed to
- * survive. So the background goes edge to edge with no rounding of its own,
- * and the glyph is inset to sit inside that safe zone.
- */
-const SAFE_SCALE = 0.78
-const inset = (512 * (1 - SAFE_SCALE)) / 2
-const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="${TEAL}"/>
-  <g transform="translate(${inset} ${inset}) scale(${SAFE_SCALE})">
-${GLYPH}  </g>
-</svg>
-`
-
-const png = (svg, size) => sharp(Buffer.from(svg)).resize(size, size).png().toBuffer()
-
-const outputs = [
-  ['favicon.svg', Buffer.from(standardSvg)],
-  ['icon-192.png', await png(standardSvg, 192)],
-  ['icon-512.png', await png(standardSvg, 512)],
-  ['icon-maskable-512.png', await png(maskableSvg, 512)],
-  // iOS ignores the manifest icons and looks for this one; it also composites
-  // onto a white background, so a full-bleed square is what's wanted.
-  ['apple-touch-icon.png', await png(standardSvg, 180)],
-]
-
-for (const [name, data] of outputs) {
-  await writeFile(join(PUBLIC_DIR, name), data)
-  console.log(`wrote public/${name}`)
+  console.log(`  ${out.padEnd(34)} ${size}px, art at ${Math.round(scale * 100)}%`)
 }
+
+// Full-bleed squares, no pre-rounded corners: iOS and Android both apply their
+// own mask, and baking a radius in leaves dark wedges outside theirs.
+await render(192, 0.92, 'public/icon-192.png')
+await render(512, 0.92, 'public/icon-512.png')
+await render(180, 0.92, 'public/apple-touch-icon.png')
+
+// Android crops adaptive icons to a device-chosen shape, and anything within
+// roughly 10% of the edge can be cut. 80% keeps the whole mark inside the safe
+// zone whatever shape the launcher picks. This is the one output that is not
+// simply a resize of the others.
+await render(512, 0.8, 'public/icon-maskable-512.png')

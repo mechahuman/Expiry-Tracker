@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import Logo from '../components/Logo'
 import fridgeArt from '../assets/onboarding-fridge.webp'
 import expiryArt from '../assets/onboarding-expiry.webp'
 import wasteArt from '../assets/onboarding-waste.webp'
@@ -47,7 +48,7 @@ export default function Onboarding() {
   return (
     <div className="onboarding">
       <header className="onboarding-top">
-        <span className="onboarding-brand">ClearEat</span>
+        <Logo tone="dark" className="onboarding-brand" />
         {/* Skip disappears on the last slide, where its only remaining
             behaviour would duplicate the primary button beneath it. */}
         {!isLast && (

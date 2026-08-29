@@ -13,6 +13,9 @@
   /* Mid green. Primary actions, "fresh" state. */
   --accent: #4caf6d;
   --accent-dark: #3d9459;
+  /* Pale green from the brand board. Only legible use is ON the brand green --
+     it carries the logo's "Eat" half and leaf where --accent would go muddy. */
+  --accent-light: #a8d67a;
   --accent-soft: #ebf9f1;
   --accent-tint: rgba(76, 175, 109, 0.1);
   --accent-ring: rgba(76, 175, 109, 0.25);

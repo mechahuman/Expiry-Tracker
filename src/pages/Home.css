@@ -30,20 +30,13 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
-.brand-name {
-  color: #fff;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-}
-
-.brand-tagline {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  margin-top: 2px;
+/* Wraps <Logo> as the page's h1, so the heading level is right without the
+   element itself carrying any of the lockup's styling. */
+.brand-mark {
+  display: inline-flex;
+  margin: 0;
+  font-size: inherit;
+  letter-spacing: normal;
 }
 
 .home-body {
