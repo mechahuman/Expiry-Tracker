@@ -30,9 +30,15 @@
   text-align: center;
 }
 
-.slide-emoji {
-  font-size: 72px;
-  line-height: 1;
+/* Native size is 354x280. Capped so it can't dominate a tall phone, and given
+   an explicit aspect-ratio so the slide doesn't reflow as each image decodes. */
+.slide-art {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  aspect-ratio: 354 / 280;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
 }
 
 .slide h1 {

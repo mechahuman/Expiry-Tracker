@@ -1,21 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import fridgeArt from '../assets/onboarding-fridge.webp'
+import expiryArt from '../assets/onboarding-expiry.webp'
+import wasteArt from '../assets/onboarding-waste.webp'
 import './Onboarding.css'
 
+// Artwork from the ClearEat Figma, archived in design/figma/images/. Imported
+// rather than referenced from public/ so Vite fingerprints them -- these are
+// content, not fixed-URL assets like the favicon.
+//
+// The images carry no information the copy doesn't, so alt="" marks them
+// decorative and keeps a screen reader from announcing a description that
+// merely repeats the heading below it.
 const SLIDES = [
   {
-    emoji: '🧊',
+    art: fridgeArt,
     title: 'See It All',
     body: 'Track everything in your fridge, pantry, and freezer at a single glance. No more forgotten ingredients.',
   },
   {
-    emoji: '🔔',
+    art: expiryArt,
     title: 'Eat It First',
     body: 'Smart alerts gently remind you what needs to be eaten first before it expires. Save money and eat fresh.',
   },
   {
-    emoji: '🌱',
+    art: wasteArt,
     title: 'Waste Less',
     body: 'Reduce your household food waste and track your daily positive impact on our beautiful planet.',
   },
@@ -48,9 +58,7 @@ export default function Onboarding() {
       </header>
 
       <section className="slide">
-        <span className="slide-emoji" role="presentation">
-          {slide.emoji}
-        </span>
+        <img className="slide-art" src={slide.art} alt="" />
         <h1>{slide.title}</h1>
         <p>{slide.body}</p>
       </section>

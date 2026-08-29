@@ -584,6 +584,16 @@
           "verifyitem_left_alone": "VerifyItem's retryPath fallback of '/add' was deliberately NOT changed: its button reads 'Discard and try again', so landing on the chooser is more correct than landing on the form.",
           "verification": "88 tests still passing, lint clean, build clean (precache 41, +2 for the new chunk). All 8 routes 200 from preview including /add/manual -- worth checking, since Module 10's navigation-fallback denylist regex could have mishandled a nested path.",
           "user_visual_check": "PENDING"
+        },
+        "brand_assets_phase_a_b_2026_08_29": {
+          "what": "Recovered the design's own image assets from Builder's CDN and wired the three onboarding illustrations in, replacing emoji placeholders I had chosen.",
+          "time_sensitive_recovery": "The 5 design images were still fetchable via a 301 from api.builder.io to cdn.builder.io, despite the export listing imageData as empty. All 5 archived to design/figma/images/ -- they sit on TEMP/ URLs expected to expire, so this was the urgent half.",
+          "native_resolution_cap": "The ?width= query param does NOT upscale. cleareat-logo is 260x195 native, illustrations 354x280. This is why the logo cannot source the 512x512 app icons -- the mark inside the lockup is only ~90px across.",
+          "webp_conversion": "Illustrations converted PNG->WebP at q82: 346 KiB -> 28 KiB, a 92% reduction, visually indistinguishable for flat vector-style art. Precache went 1127 KiB back down to 809 KiB. PNG originals kept in design/figma/images/.",
+          "globpatterns_trap_again": "webp had to be added to injectManifest.globPatterns, exactly as woff2 did during the UI rebuild. An extension missing from that list is silently not precached: the markup referencing it caches fine and the asset 404s offline. Verified 3 webp entries present in dist/sw.js.",
+          "scaffold_cleanup": "src/assets/hero.png, react.svg, vite.svg deleted -- all three confirmed unreferenced across src/, index.html and vite.config.js.",
+          "still_blocked_on_user": "Phases C (app icons) and D (in-app logo) need source files from the user: a square mark >=512px or SVG, the full lockup, and a light variant for the green Home bar (the logo is two-tone, so one file cannot serve both cream and green backgrounds).",
+          "design_note": "The 'waste less' illustration is off-palette -- blue rather than cream/green, with baked-in 'ECO-FRIENDLY CONSERVATION' text that cannot be restyled or translated. Used as designed; flagged to the user."
         }
       }
     }

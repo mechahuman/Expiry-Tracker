@@ -526,3 +526,33 @@ denylist regex could have mishandled a nested path.
 **Browser check:** tap **+** → three cards. From Scan and Voice, "Type it
 instead" must land on the *form*, not back on the chooser. Offline, Scan and
 Voice are disabled with a reason and Manual still works.
+
+### Brand assets, phases A–B — design images recovered (2026-08-29)
+
+**A time-sensitive find.** The Builder export listed `"imageData":[]`, implying
+no images came across. They had — the `<img src>` URLs in the frames still
+resolve, via a 301 from `api.builder.io` to `cdn.builder.io`. All five are now
+archived in `design/figma/images/`: the ClearEat logo lockup, three onboarding
+illustrations, and the receipt viewfinder backdrop.
+
+**The `?width=` parameter does not upscale.** `cleareat-logo` is 260×195
+native, and the circular mark inside it is only ~90px across — which is exactly
+why it cannot source a 512×512 app icon.
+
+**Onboarding now uses the real artwork** instead of the 🧊 🔔 🌱 emoji I had
+picked as placeholders.
+
+**PNG → WebP, q82: 346 KiB → 28 KiB (92% smaller)**, visually indistinguishable
+for flat vector-style art. Precache had jumped to 1127 KiB with the PNGs; it is
+809 KiB with WebP, against a 781 KiB baseline.
+
+**The globPatterns trap, a second time.** `webp` had to be added to
+`injectManifest.globPatterns` exactly as `woff2` did during the rebuild. An
+extension missing from that list is silently not precached — the markup
+referencing it caches fine and the asset 404s offline. Verified: 3 `.webp`
+entries now in `dist/sw.js`.
+
+Also deleted `src/assets/hero.png`, `react.svg`, `vite.svg` — Vite scaffold
+leftovers, all confirmed unreferenced.
+
+**Still blocked on source files** for phases C (icons) and D (in-app logo).

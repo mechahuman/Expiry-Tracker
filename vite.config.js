@@ -40,10 +40,11 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        // woff2 matters here: Poppins is self-hosted precisely so the app keeps
-        // its typeface offline, and leaving it out of this list silently undoes
-        // that -- the CSS is cached, the font it asks for isn't.
-        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+        // woff2 and webp matter here for the same reason: an extension missing
+        // from this list is silently not precached, so the CSS or markup that
+        // references it caches fine and the asset itself 404s offline. woff2
+        // is the self-hosted Poppins; webp is the onboarding artwork.
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,webp}'],
         // Worth knowing: this glob precaches *every* emitted JS chunk,
         // including lazily imported ones -- so dynamic import() keeps a
         // library out of the app-shell bundle, but Workbox still downloads it
