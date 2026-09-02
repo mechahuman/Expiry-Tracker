@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ClearEat">
+  <!-- The in-app mark, used wherever the logo renders between roughly 20 and
+       60px. logo-mark.svg carries shelf contents and clock hands that turn to
+       mush below about 48px; this keeps only what survives: the open ring, the
+       leaf, and a fridge silhouette with a divider and handle.
+
+       The detailed mark is still what scripts/generate-icons.mjs rasterises for
+       the app icons, which are 180px and up. -->
+
+  <!-- Open ring. Heavier stroke than the detailed mark so it holds at 26px. -->
+  <path d="M46.6 12.6a25 25 0 1 1-11-5.9"
+        fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Leaf filling the ring's gap. -->
+  <path d="M41.6 10.2c2.6-5 8.2-7.6 14.4-6.8.8 6.2-2 11.6-7.2 13.6-4.8 1.8-9.4-1.6-7.2-6.8Z"
+        fill="var(--logo-leaf, #4caf6d)"/>
+
+  <!-- Fridge. Centred, since there are no clock hands needing the right-hand
+       channel any more. -->
+  <rect x="22" y="18" width="20" height="28" rx="5"
+        fill="none" stroke="currentColor" stroke-width="4"/>
+  <path d="M22.5 28.5h19" stroke="currentColor" stroke-width="3.2"/>
+  <path d="M37.4 22.8v3.2M37.4 31.4v3.2"
+        stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

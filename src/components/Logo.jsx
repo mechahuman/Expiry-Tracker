@@ -35,9 +35,13 @@ export default function Logo({ tone = 'dark', showTagline = false, className = '
 }
 
 /**
- * Kept in sync with src/assets/logo-mark.svg, which is the file
- * scripts/generate-icons.mjs reads to build the PNG app icons. Edit both, or
- * the icons and the in-app logo drift apart.
+ * The compact mark, mirroring src/assets/logo-mark-compact.svg.
+ *
+ * NOT the detailed src/assets/logo-mark.svg, which is what
+ * scripts/generate-icons.mjs rasterises for the app icons. That one carries
+ * shelf contents and clock hands which are legible at 180px and up but turn to
+ * mush below about 48px -- and the logo renders at 26-40px at every call site
+ * here. Rendering both at true size and comparing is what settled it.
  *
  * aria-hidden because the wordmark beside it already spells the name; exposing
  * both would make a screen reader announce "ClearEat" twice.
@@ -45,11 +49,12 @@ export default function Logo({ tone = 'dark', showTagline = false, className = '
 function LogoMark() {
   return (
     <svg className="logo-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      {/* Heavier stroke than the detailed mark, so the ring holds at 26px. */}
       <path
         d="M46.6 12.6a25 25 0 1 1-11-5.9"
         fill="none"
         stroke="currentColor"
-        strokeWidth="4"
+        strokeWidth="5"
         strokeLinecap="round"
       />
 
@@ -57,47 +62,26 @@ function LogoMark() {
         d="M41.6 10.2c2.6-5 8.2-7.6 14.4-6.8.8 6.2-2 11.6-7.2 13.6-4.8 1.8-9.4-1.6-7.2-6.8Z"
         fill="var(--logo-leaf)"
       />
-      <path
-        d="M44.2 15.4c2.6-4.4 6.4-8 11-10.4"
-        fill="none"
-        stroke="var(--logo-leaf-rib)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
 
+      {/* Fridge silhouette: divider and handle only. Centred, since there are
+          no clock hands needing the right-hand channel. */}
       <rect
-        x="19"
+        x="22"
         y="18"
-        width="19"
-        height="28.5"
-        rx="4.5"
+        width="20"
+        height="28"
+        rx="5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="3"
+        strokeWidth="4"
       />
-      <path d="M19 28h19" stroke="currentColor" strokeWidth="2.4" />
+      <path d="M22.5 28.5h19" stroke="currentColor" strokeWidth="3.2" />
       <path
-        d="M34.6 22.6v3M34.6 30.8v3.2"
+        d="M37.4 22.8v3.2M37.4 31.4v3.2"
         stroke="currentColor"
-        strokeWidth="1.7"
+        strokeWidth="2.4"
         strokeLinecap="round"
       />
-
-      <rect x="22.2" y="21.2" width="3" height="5" rx="1.5" fill="var(--logo-leaf)" />
-      <path d="M27.4 26.2a2.8 2.8 0 0 1 5.6 0Z" fill="var(--logo-produce)" />
-
-      <path d="M22.2 43.4a3.6 3.6 0 0 1 6.6 0Z" fill="var(--logo-leaf)" />
-      <circle cx="32.4" cy="41.4" r="2.2" fill="#e74c3c" />
-      <path
-        d="M23 36.4h5"
-        stroke="var(--logo-produce)"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-
-      <circle cx="44" cy="32" r="1.7" fill="#ff9a3c" />
-      <path d="M44 32v-7" stroke="#ff9a3c" strokeWidth="2.8" strokeLinecap="round" />
-      <path d="M44 32 50.4 38.4" stroke="#ff9a3c" strokeWidth="2.8" strokeLinecap="round" />
     </svg>
   )
 }

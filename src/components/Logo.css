@@ -12,8 +12,6 @@
 .logo-dark {
   color: var(--brand);
   --logo-leaf: var(--accent);
-  --logo-leaf-rib: var(--accent-dark);
-  --logo-produce: var(--accent-light);
   --logo-word-b: var(--accent);
 }
 
@@ -22,8 +20,6 @@
 .logo-light {
   color: #fff;
   --logo-leaf: var(--accent-light);
-  --logo-leaf-rib: var(--accent);
-  --logo-produce: #fff;
   --logo-word-b: var(--accent-light);
 }
 

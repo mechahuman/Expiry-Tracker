@@ -602,3 +602,36 @@ present in the `dist/sw.js` precache. Mark inspected at 512/192/32, favicon at
 
 **Still to check on device:** reinstall the PWA and confirm the home-screen icon
 is the new mark and is not cropped.
+
+### Logo mark legibility fix (2026-08-29)
+
+**Found from a phone screenshot.** The user sent Onboarding slide 1 asking for
+confirmation. The screen was right — real illustration, correct copy, dots,
+cream, Poppins — but the logo mark was an unreadable green blob.
+
+**My error, and an avoidable one.** I had rendered the detailed mark at 32px,
+seen it fail, and built the simplified favicon *because of that* — then used the
+detailed mark in the `Logo` component anyway. It renders at **26px** on
+Onboarding, 34px on Home, 40px on Login: at or below the threshold I had just
+proven fails.
+
+**Fix:** a third mark, `src/assets/logo-mark-compact.svg` — ring, leaf, and a
+fridge silhouette with divider and handle, on heavier strokes, with the shelf
+contents and clock hands removed. Keeps the logo recognisably about food while
+staying legible at 26px.
+
+There are now three marks, each existing because the one above it fails at that
+size:
+
+| File | Used at | Where |
+|---|---|---|
+| `logo-mark.svg` | 180px+ | app icons, via `scripts/generate-icons.mjs` |
+| `logo-mark-compact.svg` | 20–60px | in-app `Logo` component |
+| `public/favicon.svg` | 16–32px | browser tab |
+
+**Method worth keeping:** render candidates at *true* pixel size and magnify
+with nearest-neighbour. Rendering at high density and downscaling flatters the
+artwork and hides precisely this failure.
+
+Verified at 26/34/40px in both tones, including light-on-green at 26px. App
+icons confirmed still generated from the detailed mark.
