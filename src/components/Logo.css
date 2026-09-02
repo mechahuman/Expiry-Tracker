@@ -9,9 +9,13 @@
 
 /* Structural green of the mark rides on `color`, so the tone classes below set
    one property and both the mark and the "Clear" half follow. */
+/* --logo-leaf-rib and --logo-produce are read only by the detailed mark
+   (detail prop, splash only); the compact mark ignores them. */
 .logo-dark {
   color: var(--brand);
   --logo-leaf: var(--accent);
+  --logo-leaf-rib: var(--accent-dark);
+  --logo-produce: var(--accent-light);
   --logo-word-b: var(--accent);
 }
 
@@ -20,6 +24,8 @@
 .logo-light {
   color: #fff;
   --logo-leaf: var(--accent-light);
+  --logo-leaf-rib: var(--accent);
+  --logo-produce: #fff;
   --logo-word-b: var(--accent-light);
 }
 

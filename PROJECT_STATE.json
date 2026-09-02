@@ -617,6 +617,17 @@
           "dead_vars_removed": "--logo-leaf-rib and --logo-produce dropped from Logo.css; only the detailed mark used them.",
           "method_note": "Rendering candidates at TRUE pixel size and magnifying with nearest-neighbour is what settled this. Rendering at high density and downscaling flatters the artwork and hides exactly this failure.",
           "verification": "88 tests, lint and build clean. Compact mark inspected at 26/34/40px in both tones, including light-on-green at 26px. App icons confirmed still generated from the detailed mark."
+        },
+        "splash_screen_2026_08_29": {
+          "what": "Added the splash/welcome screen from design/figma/splash.html, which the app was missing. It now precedes onboarding on first run.",
+          "flow": "/ -> RootRedirect -> /splash (when !hasOnboarded) -> 'Get Started' -> /onboarding -> finish/Skip -> completeOnboarding() -> /login. Splash deliberately does NOT call completeOnboarding, or tapping through it would skip the slides permanently.",
+          "guard": "Splash redirects to / when hasOnboarded is already true, so it cannot be reached again by typing the URL. Redirect happens during render to avoid a flash.",
+          "vector_not_raster": "The Figma frame uses a 260x195 raster lockup with a white box baked in, visible as a pale rectangle against the cream in the user's screenshot. Used the Logo component instead: same lockup as vector, sits cleanly on the background, sharp on any display.",
+          "detail_prop": "Added a `detail` prop to Logo, rendering the full artwork instead of the compact mark. Justified here and only here: the splash mark renders at ~68px (44px font x 1.55em), verified legible by rendering at true size. Every other call site is 26-40px and keeps the compact mark.",
+          "css_class_rename": "`.splash` was already taken by the loading placeholder used in App.jsx x2 and ProtectedRoute. Renamed that to `.app-loading` and gave `.splash` to the new page, which is the clearer naming.",
+          "design_redundancy_noted": "The frame shows the tagline twice -- once baked into the logo image, once as separate text. Rendered once.",
+          "verification": "88 tests, lint and build clean. Routes /, /splash, /onboarding, /login, /home all 200 from preview. Detailed mark rendered at 68px and visually confirmed.",
+          "user_visual_check": "PENDING"
         }
       }
     }

@@ -4,8 +4,9 @@ import { supabase } from './lib/supabaseClient'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/ProtectedRoute'
 
-// Eager: these three are the first thing anyone sees, so splitting them would
-// only add a loading flash to the critical path.
+// Eager: these are the first thing anyone sees, so splitting them would only
+// add a loading flash to the critical path.
+import Splash from './pages/Splash'
 import Onboarding from './pages/Onboarding'
 import Login from './pages/Login'
 import Home from './pages/Home'
@@ -69,8 +70,9 @@ function RootRedirect() {
   const loading = useAuthStore((s) => s.loading)
   const hasOnboarded = useAuthStore((s) => s.hasOnboarded)
 
-  if (loading) return <div className="splash">Loading…</div>
-  if (!hasOnboarded) return <Navigate to="/onboarding" replace />
+  if (loading) return <div className="app-loading">Loading…</div>
+  // First run lands on the splash, which hands off to the onboarding slides.
+  if (!hasOnboarded) return <Navigate to="/splash" replace />
   return <Navigate to={session ? '/home' : '/login'} replace />
 }
 
@@ -93,9 +95,10 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="splash">Loading…</div>}>
+      <Suspense fallback={<div className="app-loading">Loading…</div>}>
         <Routes>
           <Route path="/" element={<RootRedirect />} />
+          <Route path="/splash" element={<Splash />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/login" element={<Login />} />
           <Route

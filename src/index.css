@@ -383,8 +383,9 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
-/* Full-screen centered state, used while the session is being restored. */
-.splash {
+/* Full-screen centered state, used while the session is being restored.
+   Named app-loading, not splash: /splash is the branded welcome screen. */
+.app-loading {
   flex: 1;
   display: grid;
   place-content: center;

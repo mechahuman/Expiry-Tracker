@@ -12,7 +12,7 @@ export default function ProtectedRoute({ children }) {
   const session = useAuthStore((s) => s.session)
   const loading = useAuthStore((s) => s.loading)
 
-  if (loading) return <div className="splash">Loading…</div>
+  if (loading) return <div className="app-loading">Loading…</div>
   if (!session) return <Navigate to="/login" replace />
 
   return children

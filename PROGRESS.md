@@ -635,3 +635,31 @@ artwork and hides precisely this failure.
 
 Verified at 26/34/40px in both tones, including light-on-green at 26px. App
 icons confirmed still generated from the detailed mark.
+
+### Splash / welcome screen (2026-08-29)
+
+The app went straight to the onboarding slides. `design/figma/splash.html`
+specifies a screen before them: centred logo, tagline, "Get Started".
+
+**Flow:** `/` → `/splash` (first run only) → `/onboarding` → `/login`.
+
+Splash deliberately does **not** call `completeOnboarding()` — doing so would
+mean tapping "Get Started" skipped the slides permanently. It also redirects to
+`/` if `hasOnboarded` is already true, so it can't be reached again by URL.
+
+**Vector, not the frame's raster.** The Figma uses a 260×195 lockup image with a
+white box baked in — visible as a pale rectangle against the cream in the user's
+screenshot. The `Logo` component draws the same lockup as vector, so it sits on
+the background cleanly and stays sharp at any density.
+
+**New `detail` prop on `Logo`**, rendering the full artwork rather than the
+compact mark. Justified here and nowhere else: the splash mark renders at ~68px,
+verified legible at true size. Every other call site is 26–40px and keeps the
+compact mark.
+
+**`.splash` was already taken** by the loading placeholder (App.jsx ×2,
+ProtectedRoute). Renamed that to `.app-loading`; the new page gets `.splash`,
+which is the clearer name for it.
+
+Verified: 88 tests, lint and build clean, `/`, `/splash`, `/onboarding`,
+`/login`, `/home` all 200.

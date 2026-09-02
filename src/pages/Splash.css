@@ -1,0 +1,34 @@
+.splash {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px 40px;
+}
+
+/* The lockup sits optically centred in the space above the button, which is
+   why this takes the free space rather than the page centring everything. */
+.splash-mark {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.splash-logo {
+  font-size: 44px;
+}
+
+.splash-tagline {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--brand);
+  text-align: center;
+}
+
+.splash-tagline-em {
+  color: var(--accent);
+}
