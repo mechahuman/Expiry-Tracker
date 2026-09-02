@@ -627,7 +627,8 @@
           "css_class_rename": "`.splash` was already taken by the loading placeholder used in App.jsx x2 and ProtectedRoute. Renamed that to `.app-loading` and gave `.splash` to the new page, which is the clearer naming.",
           "design_redundancy_noted": "The frame shows the tagline twice -- once baked into the logo image, once as separate text. Rendered once.",
           "verification": "88 tests, lint and build clean. Routes /, /splash, /onboarding, /login, /home all 200 from preview. Detailed mark rendered at 68px and visually confirmed.",
-          "user_visual_check": "PENDING"
+          "user_visual_check": "PENDING",
+          "logo_size_bump": "User asked for a larger logo on the splash. Changed from a fixed 44px to clamp(44px, 14vw, 60px) rather than a bigger fixed value: the lockup is mark plus wordmark on one line, about 5.7em wide, so a size that fits the 402px design frame overflows a 320px phone. The floor preserves the old size on the narrowest devices and the ceiling stops it dominating once the 520px container caps out. Mark now renders 69px at 320px viewport up to 93px at 430px+. Tagline follows with clamp(11px, 3vw, 13px) so the pairing keeps the design's proportions. Width checked arithmetically across 320/360/390/402/430/520px -- fits with margin at all of them."
         }
       }
     }
