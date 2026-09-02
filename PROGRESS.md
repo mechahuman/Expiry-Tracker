@@ -663,3 +663,44 @@ which is the clearer name for it.
 
 Verified: 88 tests, lint and build clean, `/`, `/splash`, `/onboarding`,
 `/login`, `/home` all 200.
+
+### Automatic category, and expiry date moved up (2026-08-29)
+
+Two requests: fill the category in from the item name, and put Expiry date
+above Quantity/Unit.
+
+**Nothing set a category before this** - it was always "Uncategorized" unless
+picked by hand. So this is new behaviour, not a fix.
+
+**Two decisions taken with the user.** Chips go to **Snacks**, not Ready-to-eat
+as first suggested - otherwise Snacks has no purpose and Ready-to-eat means two
+different things. And an unrecognised name **stays Uncategorized** rather than
+defaulting to Other, which would turn "Other" from genuinely miscellaneous into
+we-didn't-know and degrade the filter on My Food.
+
+**Lives in `src/lib/categorise.js`, called from `ItemForm`** - not from
+`voiceParser`. All three entry paths funnel through that one form, so this
+covers manual, voice and OCR at once; in the parser it would miss manual entry.
+
+**Returns the category name, not an id.** `categories.id` is a `serial`;
+hardcoding "2 is Dairy" breaks silently and mis-files everything if that table
+is ever reseeded in a different order.
+
+**Matching: word-boundary, last match wins.** Last-wins because English puts the
+head noun last - *chocolate milk* is a milk, *milk chocolate* is a chocolate.
+The obvious rule, longest-match-wins, gets that pair exactly backwards since
+"chocolate" is the longer word in both. Word boundaries stop "Milky Bar" filing
+as Dairy and "tea" matching inside "steak".
+
+**The bug worth recording.** The effect keys off the *watched* name rather than
+an `onChange` handler. With Voice and OCR the user never types - the name
+arrives as a `defaultValue` and no change event fires - so an onChange version
+would work when typing and be **silently dead on the voice path**. There is a
+test using voice-transcript-shaped input specifically for this.
+
+It never overwrites a deliberate choice: touching the dropdown stops the
+guessing permanently, and editing the name into something unrecognised clears
+the earlier guess rather than leaving it stale.
+
+Verified: 101 tests (88 + 13), lint and build clean, and `register('expiry_date')`
+still appears exactly once - the field was moved, not duplicated.

@@ -629,6 +629,19 @@
           "verification": "88 tests, lint and build clean. Routes /, /splash, /onboarding, /login, /home all 200 from preview. Detailed mark rendered at 68px and visually confirmed.",
           "user_visual_check": "PENDING",
           "logo_size_bump": "User asked for a larger logo on the splash. Changed from a fixed 44px to clamp(44px, 14vw, 60px) rather than a bigger fixed value: the lockup is mark plus wordmark on one line, about 5.7em wide, so a size that fits the 402px design frame overflows a 320px phone. The floor preserves the old size on the narrowest devices and the ceiling stops it dominating once the 520px container caps out. Mark now renders 69px at 320px viewport up to 93px at 430px+. Tagline follows with clamp(11px, 3vw, 13px) so the pairing keeps the design's proportions. Width checked arithmetically across 320/360/390/402/430/520px -- fits with margin at all of them."
+        },
+        "auto_category_and_field_order_2026_08_29": {
+          "request": "Fill the category in from the item name, and move Expiry date above Quantity/Unit.",
+          "baseline": "Nothing set a category before this; it was always Uncategorized unless chosen by hand.",
+          "decisions_taken_with_user": "chips -> Snacks, not Ready-to-eat as first proposed, so Snacks has a purpose and Ready-to-eat means one thing (actual meals). An unrecognised name stays Uncategorized rather than defaulting to Other, which would turn Other from genuinely-miscellaneous into we-didnt-know and degrade the category filter.",
+          "where_it_lives": "src/lib/categorise.js, pure and tested, called from ItemForm. NOT from voiceParser: manual, voice and OCR all funnel through that one form, so one implementation covers every entry path; in the parser it would miss manual entry.",
+          "returns_name_not_id": "suggestCategory() returns the category NAME. categories.id is a serial, so hardcoding '2 is Dairy' would break silently and mis-file everything if that table were reseeded in a different order.",
+          "matching_rule": "Word-boundary, LAST match wins. Last wins because English puts the head noun last: chocolate milk is a milk, milk chocolate is a chocolate. Longest-match-wins gets that pair exactly backwards since chocolate is the longer word in both. Word boundaries stop Milky Bar filing as Dairy and tea matching inside steak.",
+          "subtle_bug_avoided": "The effect keys off the WATCHED name, not an onChange handler. With Voice and OCR the user never types, so the name arrives as a defaultValue and no change event fires; an onChange version would work when typing and be silently dead on the voice path. A test uses voice-transcript-shaped input for exactly that.",
+          "never_overwrites_user": "Two refs rather than state, since state would land in the effect dependency list and re-trigger what it exists to suppress. categoryTouched stops guessing permanently once the dropdown is used; categoryWasAuto clears an earlier guess when the name is edited into something unrecognised.",
+          "field_reorder": "Expiry date moved from last to directly after Name, above the Quantity/Unit row. Verified register('expiry_date') still appears exactly once, so the block was moved and not duplicated.",
+          "verification": "101 tests passing (88 + 13 new), lint and build clean. Tests cover the head-noun pair, the Milky Bar / steak / coconut water false positives, unmatched -> null, empty and null input, and a guard asserting no keyword appears under two categories.",
+          "user_visual_check": "PENDING"
         }
       }
     }

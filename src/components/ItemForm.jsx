@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabaseClient'
 import { useAuthStore } from '../store/authStore'
 import { todayISO } from '../lib/date'
+import { suggestCategory } from '../lib/categorise'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import './ItemForm.css'
 
@@ -56,6 +57,7 @@ export default function ItemForm({
   const {
     register,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors, isSubmitting },
   } = useForm({
@@ -70,6 +72,44 @@ export default function ItemForm({
 
   const expiryDate = watch('expiry_date')
   const isPastExpiry = expiryDate && expiryDate < todayISO()
+
+  const name = watch('name')
+
+  // Refs, not state: these gate the effect below, and holding them as state
+  // would put them in its dependency list and re-trigger the thing they exist
+  // to suppress.
+  const categoryTouched = useRef(Boolean(initialValues.category_id))
+  const categoryWasAuto = useRef(false)
+  const [categoryAuto, setCategoryAuto] = useState(false)
+
+  // Fills the category in from the name. Keyed on the *watched* value rather
+  // than hung off an onChange handler, which matters more than it looks: with
+  // Voice and OCR the user never types, so the name arrives as a defaultValue
+  // and no change event ever fires. An onChange version would work when typing
+  // and be silently dead on exactly those two paths.
+  useEffect(() => {
+    if (categoryTouched.current) return
+    // Nothing to map a name onto until the fetch lands, so this re-runs when
+    // `categories` arrives.
+    if (categories.length === 0) return
+
+    const suggested = suggestCategory(name)
+    const match = suggested
+      ? categories.find((c) => c.name.toLowerCase() === suggested.toLowerCase())
+      : null
+
+    if (match) {
+      setValue('category_id', String(match.id))
+      categoryWasAuto.current = true
+      setCategoryAuto(true)
+    } else if (categoryWasAuto.current) {
+      // The name was edited into something unrecognised. Clear our own earlier
+      // guess rather than leaving a stale category attached to a new item.
+      setValue('category_id', '')
+      categoryWasAuto.current = false
+      setCategoryAuto(false)
+    }
+  }, [name, categories, setValue])
 
   const onSubmit = async (values) => {
     setSubmitError('')
@@ -129,6 +169,21 @@ export default function ItemForm({
         {errors.name && <p className="field-error">{errors.name.message}</p>}
       </label>
 
+      {/* Above quantity on purpose: the expiry date is the entire point of the
+          app, so it comes straight after the name rather than last. */}
+      <label className="field">
+        <span>
+          Expiry date
+          {detectedFields.expiry_date && <DetectedTag />}
+        </span>
+        <input type="date" {...register('expiry_date', { required: 'Expiry date is required' })} />
+        {errors.expiry_date && <p className="field-error">{errors.expiry_date.message}</p>}
+        {/* Soft warning only -- some items are deliberately logged already expired. */}
+        {!errors.expiry_date && isPastExpiry && (
+          <p className="field-warning">This date is in the past.</p>
+        )}
+      </label>
+
       <div className="field-row">
         <label className="field">
           <span>
@@ -164,8 +219,22 @@ export default function ItemForm({
       </div>
 
       <label className="field">
-        <span>Category</span>
-        <select {...register('category_id')}>
+        <span>
+          Category
+          {(categoryAuto || detectedFields.category_id) && <DetectedTag />}
+        </span>
+        <select
+          {...register('category_id', {
+            // Once the user picks for themselves, stop guessing -- for good.
+            // An auto-fill that overwrites a deliberate choice is worse than
+            // no auto-fill at all.
+            onChange: () => {
+              categoryTouched.current = true
+              categoryWasAuto.current = false
+              setCategoryAuto(false)
+            },
+          })}
+        >
           <option value="">Uncategorized</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
@@ -174,22 +243,6 @@ export default function ItemForm({
           ))}
         </select>
         {categoriesError && <p className="field-error">{categoriesError}</p>}
-      </label>
-
-      <label className="field">
-        <span>
-          Expiry date
-          {detectedFields.expiry_date && <DetectedTag />}
-        </span>
-        <input
-          type="date"
-          {...register('expiry_date', { required: 'Expiry date is required' })}
-        />
-        {errors.expiry_date && <p className="field-error">{errors.expiry_date.message}</p>}
-        {/* Soft warning only -- some items are deliberately logged already expired. */}
-        {!errors.expiry_date && isPastExpiry && (
-          <p className="field-warning">This date is in the past.</p>
-        )}
       </label>
 
       {submitError && <p className="form-banner error">{submitError}</p>}
