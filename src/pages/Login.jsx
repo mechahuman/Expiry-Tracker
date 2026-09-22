@@ -113,7 +113,7 @@ export default function Login() {
       </p>
 
       <p className="disclaimer">
-        Disclaimer: ClearEat is a tracking tool to help you manage your inventory. It does not guarantee food safety. Always inspect your food before consuming. ClearEat is not liable for any harm or illness caused by consuming spoiled or expired items.
+        <strong>Disclaimer:</strong> ClearEat is a tracking tool to help you manage your inventory. It does not guarantee food safety. Always inspect your food before consuming. ClearEat is not liable for any harm or illness caused by consuming spoiled or expired items.
       </p>
 
       {/* Google OAuth deliberately deferred -- it needs a Google Cloud project
