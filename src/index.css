@@ -391,3 +391,12 @@ textarea:focus {
   place-content: center;
   color: var(--text-muted);
 }
+
+.app-disclaimer {
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  opacity: 0.6;
+  margin-top: 16px;
+  padding: 0 20px 24px;
+}

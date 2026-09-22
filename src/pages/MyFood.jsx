@@ -129,6 +129,10 @@ export default function MyFood() {
         )}
       </div>
 
+      <p className="app-disclaimer">
+        Disclaimer: ClearEat is a tracking tool, not a food safety guarantee. Always inspect your food.
+      </p>
+
       <BottomNav />
     </div>
   )

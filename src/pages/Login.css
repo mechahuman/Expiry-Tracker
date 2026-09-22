@@ -42,8 +42,8 @@
 
 .disclaimer {
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
-  opacity: 0.6;
+  font-weight: bold;
   margin-top: 12px;
 }
