@@ -20,7 +20,7 @@ export default function Login() {
 
   // Already signed in (e.g. hit /login directly with a live session) -- the
   // redirect happens here rather than in a useEffect so there's no flash.
-  if (session) return <Navigate to="/home" replace />
+  if (session) return <Navigate to="/" replace />
 
   const onSubmit = async ({ email, password }) => {
     setFormError('')
