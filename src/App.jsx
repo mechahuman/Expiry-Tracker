@@ -63,17 +63,21 @@ const VoiceInput = lazyRoute(() => import('./pages/VoiceInput'))
 const ScanItem = lazyRoute(() => import('./pages/ScanItem'))
 const VerifyItem = lazyRoute(() => import('./pages/VerifyItem'))
 const Rewards = lazyRoute(() => import('./pages/Rewards'))
+const Disclaimer = lazyRoute(() => import('./pages/Disclaimer'))
 
 /** Decides where "/" lands, based on onboarding + session state. */
 function RootRedirect() {
   const session = useAuthStore((s) => s.session)
   const loading = useAuthStore((s) => s.loading)
   const hasOnboarded = useAuthStore((s) => s.hasOnboarded)
+  const hasAcceptedDisclaimer = useAuthStore((s) => s.hasAcceptedDisclaimer)
 
   if (loading) return <div className="app-loading">Loading…</div>
   // First run lands on the splash, which hands off to the onboarding slides.
   if (!hasOnboarded) return <Navigate to="/splash" replace />
-  return <Navigate to={session ? '/home' : '/login'} replace />
+  if (!session) return <Navigate to="/login" replace />
+  if (!hasAcceptedDisclaimer) return <Navigate to="/disclaimer" replace />
+  return <Navigate to="/home" replace />
 }
 
 export default function App() {
@@ -101,6 +105,14 @@ export default function App() {
           <Route path="/splash" element={<Splash />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/disclaimer"
+            element={
+              <ProtectedRoute>
+                <Disclaimer />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/home"
             element={

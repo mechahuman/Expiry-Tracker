@@ -25,6 +25,24 @@ function persistOnboarded() {
   }
 }
 
+const DISCLAIMER_KEY = 'expiry-tracker:disclaimer'
+
+function readDisclaimer() {
+  try {
+    return localStorage.getItem(DISCLAIMER_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function persistDisclaimer() {
+  try {
+    localStorage.setItem(DISCLAIMER_KEY, 'true')
+  } catch {
+    /* Non-fatal */
+  }
+}
+
 export const useAuthStore = create((set) => ({
   session: null,
 
@@ -34,12 +52,18 @@ export const useAuthStore = create((set) => ({
   loading: true,
 
   hasOnboarded: readOnboarded(),
+  hasAcceptedDisclaimer: readDisclaimer(),
 
   setSession: (session) => set({ session, loading: false }),
 
   completeOnboarding: () => {
     persistOnboarded()
     set({ hasOnboarded: true })
+  },
+
+  acceptDisclaimer: () => {
+    persistDisclaimer()
+    set({ hasAcceptedDisclaimer: true })
   },
 
   // Session state is cleared by the onAuthStateChange listener in App.jsx,
